@@ -1,0 +1,22 @@
+# Python 3.12
+# 這裡放「約束」，Day 03 跑完 pip install 後用 pip freeze > requirements.lock.txt 釘死實際版本
+
+# Google Gen AI / ADK / Agent Platform
+google-genai
+google-adk>=2.0
+google-cloud-aiplatform[agent_engines,adk]>=1.112
+
+# Web
+fastapi
+uvicorn[standard]
+pydantic>=2
+python-multipart
+
+# 履歷解析
+pypdf
+
+# 雜項
+python-dotenv
+
+# 開發
+pytest

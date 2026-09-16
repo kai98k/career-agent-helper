@@ -1,0 +1,19 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+.env.local
+
+# 憑證：絕對不要進版控
+*-key.json
+service-account*.json
+application_default_credentials.json
+
+# 評估產出
+evals/reports/*
+!evals/reports/.gitkeep
+
+.DS_Store
+.idea/
+.vscode/
