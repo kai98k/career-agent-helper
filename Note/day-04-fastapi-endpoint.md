@@ -11,11 +11,54 @@ status: writing
 
 > Recap: 昨天跑出了第一次呼叫，但那還是一支「改一行、跑一次」的腳本
 
+
 昨天那支腳本是能動，可是換個問法就要回去改 `contents=` 那一行
 想比較兩種寫法哪個好，得跑兩次然後自己在終端機往上捲
 跑完也沒地方留
 
-今天把它變成一個端點
+所以今天把它變成一個端點
+
+## 先讓服務跑起來
+
+在寫分析邏輯之前，先確認 FastAPI 這層是活的
+
+`backend/app/main.py`：
+
+```python
+from fastapi import FastAPI
+
+from app.config import get_settings
+
+app = FastAPI(title="Career Agent Helper", version="0.2.0")
+
+
+@app.get("/healthz")
+def healthz() -> dict:
+    s = get_settings()
+    return {
+        "status": "ok",
+        "env": s.app_env,
+        "location": s.location,
+        "model": s.model,
+        "project_configured": bool(s.project_id),
+    }
+```
+
+```bash
+cd backend
+uvicorn app.main:app --reload
+```
+
+`/healthz` 刻意不是只回 `{"status": "ok"}`
+它要順便告訴我現在讀到的是哪個 project、哪個 region、哪個模型
+
+昨天那支腳本炸掉的時候，八成是這三個其中之一沒讀到
+把它做成一個隨時可以打的端點，比每次回去加 `print` 快
+
+`--reload` 只在本機用，改完檔案會自己重啟
+開 http://127.0.0.1:8000/docs 就有 Swagger，之後每加一個端點都會自己出現在上面，不用另外寫測試頁
+
+版本：Python 3.12.10、fastapi 0.141.1、uvicorn 0.52.4
 
 ## 端點
 
@@ -40,8 +83,6 @@ def analyze_resume(req: AnalyzeRequest) -> AnalyzeResponse:
 ## 第一筆帳單
 
 包成端點之後，呼叫從「偶爾跑一次」變成「隨手就打」
-成本這時候才從小數點後面的東西，變成要盯著看的東西
-
 拿一份虛構履歷打一次
 
 ```json
@@ -55,10 +96,6 @@ def analyze_resume(req: AnalyzeRequest) -> AnalyzeResponse:
   }
 }
 ```
-
-`thought_tokens` 是 1367，比實際輸出的 600 還多一倍以上，佔了總量 61%
-而思考 token 是按輸出價計費的
-
 Gemini 2.5 系列預設開啟思考，不設 `thinking_budget` 就是讓模型自己決定要想多久
 
 ```python
@@ -66,13 +103,6 @@ types.GenerateContentConfig(
     thinking_config=types.ThinkingConfig(thinking_budget=0)
 )
 ```
-
-關掉之後同一份履歷是 709 token、5.2 秒，差 3.1 倍
-而兩份輸出講的是同三件事：量化成果、補充細節、加上摘要
-
-但我不打算現在就無腦關掉它
-這只是用一份履歷測出來的結論，而這種任務本來就不太需要推理
-要當成結論得有對照組，那是後面的事
 
 ## 保險絲
 
@@ -84,14 +114,13 @@ Console 的預算設定有兩種，差別很大
 我兩個都設了
 上限 $10 防手滑，告警 50% 和 80% 讓我在被停掉之前先知道
 
-<!-- 截圖：預算設定頁 -->
+![https://ithelp.ithome.com.tw/upload/images/20260918/20184275Cx8wfzj9L1.png](https://ithelp.ithome.com.tw/upload/images/20260918/20184275Cx8wfzj9L1.png)
 
 ## 明天
 
 把這個端點接上畫面
 動手之前要先確認一件事：ADK 自帶的 dev UI 夠不夠用
 夠的話，這篇就會變成「為什麼我不自己刻前端」!
-
 ---
 
 <!-- 待補
