@@ -1,0 +1,40 @@
+鄭浩然
+DevOps / SRE 工程師 / 6 年經驗
+Email: haojan.cheng@example.invalid
+電話: 0900-000-007
+所在地: 新竹市
+
+【自我介紹】
+六年基礎架構與維運經驗，橫跨自建機房與公有雲。專長是把交付流程自動化，
+以及在事故發生前用可觀測性把問題攔下來。
+
+【工作經歷】
+鴻岫雲端  SRE 工程師  2022/01 - 迄今
+- 將 32 個服務由 EC2 遷移至 EKS，部署失敗率由 9% 降至 1.2%，
+  單次部署時間由 25 分鐘縮短為 6 分鐘
+- 以 Terraform 管理 3 個環境共 400 餘項資源，環境重建時間從 2 天縮短到 3 小時
+- 建立 Prometheus 與 Grafana 監控體系，涵蓋 78 條告警規則，
+  告警噪音（無效告警比例）由 61% 降至 14%
+- 擔任 on-call 主責，導入事故檢討制度，一年內重複性事故由 11 次降至 3 次
+- 用 Spot 執行個體與資源回收，將測試環境雲端成本每月降低約 NT$210,000
+
+沛原科技  DevOps 工程師  2019/09 - 2021/12
+- 建置 GitLab CI 流程供 14 個專案使用，取代原本手動 FTP 上傳的部署方式
+- 導入集中化日誌（ELK），事故查詢時間由平均 40 分鐘縮短至 8 分鐘
+- 撰寫 Ansible playbook 管理 60 台實體機的設定與套件版本
+
+恆嘉軟體  系統工程師  2019/01 - 2019/08
+- 負責機房伺服器上下架、備份排程與網路設定
+- 完成 Windows Server 網域整併，減少 2 台網域控制站
+
+【技能】
+Kubernetes、Docker、Terraform、Ansible、AWS（EKS / EC2 / RDS / IAM / VPC）、
+GCP 基礎、Linux（RHEL / Ubuntu）、Bash、Python、Go 基礎、
+GitLab CI、GitHub Actions、ArgoCD、Prometheus、Grafana、Loki、ELK、Nginx
+
+【學歷】
+鴻岫大學 資訊網路與多媒體學系 學士  2014/09 - 2018/06
+
+【證照】
+- Certified Kubernetes Administrator（CKA），2022 年取得
+- AWS Certified Solutions Architect – Associate，2021 年取得

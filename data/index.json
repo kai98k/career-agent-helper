@@ -1,0 +1,300 @@
+{
+  "dataset": "career-agent-helper 測試資料集",
+  "version": "1.0",
+  "created": "2026-09-18",
+  "notice": "本資料集內所有姓名、公司、聯絡方式皆為虛構，不對應任何真實個人或企業。email 一律使用 @example.invalid，電話使用 0900-000-00X 保留號段。僅供分析品質測試與評估基準使用。",
+  "fit_scale": {
+    "strong": "條件大致吻合，必備條件缺漏 0-1 項，可直接進入面試",
+    "partial": "方向相符但有明顯落差，必備條件缺 2-3 項或年資不足",
+    "weak": "職能或年資明顯不符，不建議投遞"
+  },
+  "quality_issue_types": {
+    "vague": "全篇只有籠統敘述（負責開發、協助專案），沒有可驗證的細節",
+    "quantified": "履歷原文即包含具體數字與成果，可用來驗證模型是否照實引用",
+    "skill_gap": "職稱與技能清單明顯不相稱，缺少該職能的核心技能",
+    "timeline_gap": "工作經歷之間有未說明的空白期",
+    "explained_gap": "有空白期但履歷中已說明原因，模型不應誤判為隱瞞"
+  },
+  "resumes": [
+    {
+      "file": "resumes/sample-backend-1y.txt",
+      "name": "陳柏宇",
+      "role": "後端工程師",
+      "years": 1,
+      "summary": "Java / Spring Boot 背景的新鮮後端，敘述具體但經驗淺，技能清單完全沒有資料庫。",
+      "quality_issues": ["skill_gap"],
+      "notes": "職稱是後端、工作內容提到報表與排程，但技能欄與經歷都沒有任何資料庫（SQL / MySQL / PostgreSQL）。用來測試模型能否指出核心技能缺漏。"
+    },
+    {
+      "file": "resumes/sample-backend-4y.txt",
+      "name": "林可薇",
+      "role": "後端工程師",
+      "years": 4,
+      "summary": "四年年資的後端，通篇是「負責系統開發」「協助專案進行」這類沒有資訊量的敘述。",
+      "quality_issues": ["vague"],
+      "notes": "三段經歷共 11 條 bullet 全無具體技術、規模或成果。用來測試模型會不會自行腦補出不存在的細節。"
+    },
+    {
+      "file": "resumes/sample-backend-8y.txt",
+      "name": "黃詠翔",
+      "role": "資深後端工程師 / Tech Lead",
+      "years": 8,
+      "summary": "八年經驗的 Tech Lead，微服務拆分與效能調校，每條 bullet 都帶數字。",
+      "quality_issues": ["quantified"],
+      "notes": "QPS、P99 延遲、MTTR、測試覆蓋率等數字皆為履歷原文所載。用來檢查模型是否照實引用而不誇大或改寫數字。"
+    },
+    {
+      "file": "resumes/sample-frontend-2y.txt",
+      "name": "吳姿瑩",
+      "role": "前端工程師",
+      "years": 2,
+      "summary": "兩年前端，設計背景轉入，內容極度籠統，技能只有最基本的幾項。",
+      "quality_issues": ["vague"],
+      "notes": "「負責公司網站的前端開發」「支援各項專案需求」之類的敘述，沒有框架深度也沒有專案規模。"
+    },
+    {
+      "file": "resumes/sample-frontend-5y.txt",
+      "name": "張宥辰",
+      "role": "資深前端工程師",
+      "years": 5,
+      "summary": "React / TypeScript 主力，SSR 遷移與效能優化，成果量化完整。",
+      "quality_issues": ["quantified"],
+      "notes": "LCP、bundle size、Lighthouse 分數、元件數量皆為履歷原文所載。"
+    },
+    {
+      "file": "resumes/sample-data-engineer-3y.txt",
+      "name": "蘇宜臻",
+      "role": "資料工程師",
+      "years": 3,
+      "summary": "職稱是資料工程師，實際內容偏報表與資料清洗，且 2021-2023 有兩年空白。",
+      "quality_issues": ["skill_gap", "timeline_gap", "vague"],
+      "notes": "技能欄沒有 SQL、沒有任何排程工具（Airflow）、沒有資料倉儲或雲端資料服務，與職稱明顯不相稱；2021/04 至 2023/02 之間有近兩年未說明的空白期。"
+    },
+    {
+      "file": "resumes/sample-devops-sre-6y.txt",
+      "name": "鄭浩然",
+      "role": "DevOps / SRE 工程師",
+      "years": 6,
+      "summary": "六年維運經驗，機房到 K8s 都做過，部署與告警改善都有數字，附 CKA 證照。",
+      "quality_issues": ["quantified"],
+      "notes": "部署失敗率、MTTR、告警噪音比例、雲端成本節省金額皆為履歷原文所載。"
+    },
+    {
+      "file": "resumes/sample-qa-3y.txt",
+      "name": "許雅筑",
+      "role": "QA 工程師",
+      "years": 3,
+      "summary": "三年手動測試經驗，敘述籠統，完全沒有自動化測試與程式能力的痕跡。",
+      "quality_issues": ["vague", "skill_gap"],
+      "notes": "「負責產品的測試工作」「執行功能測試」。技能只有 Jira、TestRail、SQL 基礎，沒有任何測試框架或程式語言。"
+    },
+    {
+      "file": "resumes/sample-career-changer-1y.txt",
+      "name": "方之晴",
+      "role": "軟體工程師（轉職中）",
+      "years": 1,
+      "summary": "餐飲業督導轉職，自學一年後端，有一個真的上線給門市使用的側專案。",
+      "quality_issues": ["explained_gap"],
+      "notes": "2021/06 至 2024/08 的空白期在履歷中已說明為家庭照護，模型若當成負面疑點即為誤判。前職的自動化成果（每週省 6 小時）是可遷移能力的線索。"
+    },
+    {
+      "file": "resumes/sample-student-intern.txt",
+      "name": "賴禹丞",
+      "role": "應屆畢業生（應徵後端）",
+      "years": 0,
+      "summary": "資工應屆，兩段實習加課程專題，實習內容偏輔助性質。",
+      "quality_issues": ["skill_gap"],
+      "notes": "要應徵後端，但技能欄沒有任何資料庫與版本控制（Git），僅在修課清單裡出現「資料庫系統」。實習 bullet 多為「協助」「依照指示」。"
+    }
+  ],
+  "jobs": [
+    {
+      "file": "jobs/sample-job-backend-senior.txt",
+      "title": "資深後端工程師（訂單與金流平台）",
+      "company": "鴻岫雲端",
+      "summary": "5 年以上、Go / Python、微服務、K8s、Kafka，並要求帶人經驗。門檻高。",
+      "must_have_count": 7
+    },
+    {
+      "file": "jobs/sample-job-backend-junior.txt",
+      "title": "後端工程師（初階）",
+      "company": "明曜資訊",
+      "summary": "1-3 年或有完整作品即可，要求基本 SQL、REST API 與 Git 協作。對轉職者友善。",
+      "must_have_count": 6
+    },
+    {
+      "file": "jobs/sample-job-frontend-react.txt",
+      "title": "前端工程師（React / 電商前台）",
+      "company": "雲徑數據",
+      "summary": "3 年以上、React + TypeScript、SSR、效能優化與自動化測試、元件庫經驗。",
+      "must_have_count": 7
+    },
+    {
+      "file": "jobs/sample-job-data-platform.txt",
+      "title": "資料工程師（資料平台）",
+      "company": "沛原科技",
+      "summary": "3 年以上、精通 SQL、資料倉儲建模、Airflow 類排程、雲端資料倉儲。",
+      "must_have_count": 7
+    },
+    {
+      "file": "jobs/sample-job-sre.txt",
+      "title": "SRE 工程師（平台可靠性）",
+      "company": "星曜互動科技",
+      "summary": "5 年以上維運、K8s、Terraform、公有雲、CI/CD、監控、on-call 實績。",
+      "must_have_count": 8
+    },
+    {
+      "file": "jobs/sample-job-qa-automation.txt",
+      "title": "自動化測試工程師（SDET）",
+      "company": "恆嘉軟體",
+      "summary": "3 年測試含 1 年自動化，要求程式能力、E2E 框架、API 測試與 CI 整合。",
+      "must_have_count": 7
+    }
+  ],
+  "expected_matches": [
+    {
+      "resume": "sample-backend-8y.txt",
+      "job": "sample-job-backend-senior.txt",
+      "expected_fit": "strong",
+      "reason": "7 項必備條件全數命中，含帶人經驗、Kafka、K8s 與金流系統背景，加分條件也中了 4 項。"
+    },
+    {
+      "resume": "sample-backend-4y.txt",
+      "job": "sample-job-backend-senior.txt",
+      "expected_fit": "partial",
+      "reason": "年資 4 年略低於 5 年門檻，技能欄有 Python 與 MySQL 但履歷完全沒有微服務、K8s、Kafka 或帶人的佐證，內容籠統無法驗證深度。"
+    },
+    {
+      "resume": "sample-backend-1y.txt",
+      "job": "sample-job-backend-senior.txt",
+      "expected_fit": "weak",
+      "reason": "年資差距過大，且缺資料庫、容器化、訊息佇列與領導經驗。"
+    },
+    {
+      "resume": "sample-backend-1y.txt",
+      "job": "sample-job-backend-junior.txt",
+      "expected_fit": "strong",
+      "reason": "年資、Java、REST API、Git 協作與 Linux 皆符合；唯一缺口是完全沒有 SQL 佐證，屬必備第 4 項。"
+    },
+    {
+      "resume": "sample-backend-4y.txt",
+      "job": "sample-job-backend-junior.txt",
+      "expected_fit": "partial",
+      "reason": "年資超過區間上限，技能表面吻合（Python / PHP / MySQL / Git），但履歷過於籠統，無法確認 API 與協作深度。"
+    },
+    {
+      "resume": "sample-career-changer-1y.txt",
+      "job": "sample-job-backend-junior.txt",
+      "expected_fit": "strong",
+      "reason": "職缺明文接受作品集與轉職者，側專案已實際上線並涵蓋 FastAPI、PostgreSQL、Docker 與 Git，6 項必備條件皆有佐證。"
+    },
+    {
+      "resume": "sample-student-intern.txt",
+      "job": "sample-job-backend-junior.txt",
+      "expected_fit": "partial",
+      "reason": "年資含實習勉強符合，Node.js 與專題可佐證 API 經驗，但缺 SQL 實作證據與 Git 協作經驗，實習內容偏輔助性質。"
+    },
+    {
+      "resume": "sample-backend-8y.txt",
+      "job": "sample-job-backend-junior.txt",
+      "expected_fit": "weak",
+      "reason": "技能全面超出，但年資與薪資區間明顯過高，實務上不會媒合。"
+    },
+    {
+      "resume": "sample-frontend-5y.txt",
+      "job": "sample-job-frontend-react.txt",
+      "expected_fit": "strong",
+      "reason": "7 項必備條件全命中，含 Next.js SSR、效能量化、Playwright 與 42 個元件的共用元件庫；加分條件 WCAG 與 Storybook 也符合。"
+    },
+    {
+      "resume": "sample-frontend-2y.txt",
+      "job": "sample-job-frontend-react.txt",
+      "expected_fit": "weak",
+      "reason": "年資不足 3 年，無 TypeScript、無 SSR、無測試、無元件庫經驗，7 項必備僅勉強命中 React 與 Git。"
+    },
+    {
+      "resume": "sample-backend-8y.txt",
+      "job": "sample-job-frontend-react.txt",
+      "expected_fit": "weak",
+      "reason": "職能不符，履歷無任何前端經驗。"
+    },
+    {
+      "resume": "sample-data-engineer-3y.txt",
+      "job": "sample-job-data-platform.txt",
+      "expected_fit": "partial",
+      "reason": "職稱與年資相符，Python / pandas 可對上必備第 5 項，但缺 SQL 佐證、無資料倉儲建模、無排程工具、無雲端資料倉儲，7 項必備僅命中 1-2 項。這組是測試「職稱吻合但實質落差大」的關鍵樣本。"
+    },
+    {
+      "resume": "sample-backend-8y.txt",
+      "job": "sample-job-data-platform.txt",
+      "expected_fit": "partial",
+      "reason": "有大量 PostgreSQL 調校、分區表與物化檢視、每月 180 萬筆交易的批次處理經驗，資料處理底子足夠，但無 Airflow 類排程與雲端資料倉儲經驗。"
+    },
+    {
+      "resume": "sample-qa-3y.txt",
+      "job": "sample-job-data-platform.txt",
+      "expected_fit": "weak",
+      "reason": "職能不符，僅 SQL 基礎一項沾邊。"
+    },
+    {
+      "resume": "sample-devops-sre-6y.txt",
+      "job": "sample-job-sre.txt",
+      "expected_fit": "strong",
+      "reason": "8 項必備條件全命中，含 K8s 遷移、Terraform 管 400 項資源、AWS、GitLab CI、Prometheus 與 on-call 事故改善；加分條件命中 CKA、成本優化、ArgoCD 與上雲遷移。"
+    },
+    {
+      "resume": "sample-backend-8y.txt",
+      "job": "sample-job-sre.txt",
+      "expected_fit": "partial",
+      "reason": "具備 K8s、Terraform、Prometheus、AWS 與 SLO 設計經驗，但主體職能是後端開發，缺少獨立維運與機房層級的實績。"
+    },
+    {
+      "resume": "sample-backend-1y.txt",
+      "job": "sample-job-sre.txt",
+      "expected_fit": "weak",
+      "reason": "年資與職能皆不符，僅有 Linux 基本指令。"
+    },
+    {
+      "resume": "sample-frontend-2y.txt",
+      "job": "sample-job-sre.txt",
+      "expected_fit": "weak",
+      "reason": "職能完全不符。"
+    },
+    {
+      "resume": "sample-qa-3y.txt",
+      "job": "sample-job-qa-automation.txt",
+      "expected_fit": "partial",
+      "reason": "3 年測試年資與測試計畫撰寫符合，但缺自動化年資、無程式語言、無 E2E 框架、無 CI 整合經驗，7 項必備約命中 2 項。這組測試「職稱完全對上但關鍵能力缺席」。"
+    },
+    {
+      "resume": "sample-frontend-5y.txt",
+      "job": "sample-job-qa-automation.txt",
+      "expected_fit": "partial",
+      "reason": "Playwright、CI 與程式能力皆具備，測試導入也有實績，但本職為前端開發、非測試職能，且無測試計畫與缺陷管理經驗。"
+    },
+    {
+      "resume": "sample-student-intern.txt",
+      "job": "sample-job-qa-automation.txt",
+      "expected_fit": "weak",
+      "reason": "有協助測試官網的工讀經驗，但無正式測試年資與自動化能力。"
+    },
+    {
+      "resume": "sample-career-changer-1y.txt",
+      "job": "sample-job-backend-senior.txt",
+      "expected_fit": "weak",
+      "reason": "年資差距過大，無微服務、K8s 或團隊領導經驗。"
+    },
+    {
+      "resume": "sample-data-engineer-3y.txt",
+      "job": "sample-job-backend-junior.txt",
+      "expected_fit": "partial",
+      "reason": "具 Python 與 Git，但無 API 開發經驗、無 SQL 佐證，跨職能需要重新評估。"
+    },
+    {
+      "resume": "sample-devops-sre-6y.txt",
+      "job": "sample-job-backend-senior.txt",
+      "expected_fit": "partial",
+      "reason": "K8s、Docker、AWS 與 Python 皆符合，但缺產品級後端開發實績、無資料庫調校與訊息佇列的開發經驗。"
+    }
+  ]
+}

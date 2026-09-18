@@ -16,4 +16,11 @@ evals/reports/*
 
 .DS_Store
 .idea/
-.vscode/
+
+# VS Code：只保留共用的 settings.json（釘住直譯器）
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Git Bash crash dump
+*.stackdump

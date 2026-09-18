@@ -1,0 +1,39 @@
+張宥辰
+前端工程師 / 5 年經驗
+Email: youchen.chang@example.invalid
+電話: 0900-000-005
+所在地: 台中市
+
+【自我介紹】
+五年前端開發經驗，主力為 React 與 TypeScript，近兩年負責電商前台的效能與
+可存取性優化。習慣用數據驗證改動效果，並把量測納入開發流程。
+
+【工作經歷】
+雲徑數據  資深前端工程師  2022/09 - 迄今
+- 主導電商前台改用 Next.js SSR，首屏 LCP 由 4.1 秒降至 1.6 秒，
+  行動版跳出率下降 18%
+- 建立共用元件庫（42 個元件）與 Storybook 文件，跨 3 個產品線共用，
+  新頁面開發時間平均縮短 35%
+- 導入 Playwright 端對端測試，主要結帳流程覆蓋 28 個情境，
+  上線後結帳相關回報由每月 15 件降至 4 件
+- 將 bundle 由 2.3MB 縮減到 780KB，透過 code splitting 與移除 4 個重複套件
+
+星曜互動  前端工程師  2020/06 - 2022/08
+- 開發後台管理介面，包含 60 餘張表單頁面，使用 React 與 Redux
+- 完成 WCAG 2.1 AA 可存取性調整，Lighthouse 無障礙分數由 62 提升至 95
+- 與後端協作定義 OpenAPI 規格，減少介接來回確認的往返次數
+
+明曜資訊  前端工程師  2019/08 - 2020/05
+- 維護 jQuery 舊專案並逐步遷移至 Vue 2，完成 12 個頁面的重寫
+
+【技能】
+TypeScript、JavaScript（ES2022）、React、Next.js、Redux、Vue 2、
+HTML5、CSS3、Tailwind CSS、Sass、Vite、Webpack、Jest、
+React Testing Library、Playwright、Storybook、Git、GitHub Actions、Figma
+
+【學歷】
+雲徑大學 資訊管理學系 學士  2015/09 - 2019/06
+
+【其他】
+- 技術部落格維護 3 年，前端效能主題文章 26 篇
+- 2024 年前端社群小聚講者，分享 SSR 遷移的取捨

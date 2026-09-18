@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 職涯學習助理</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --border: #d9dce1;
+    --text: #1f2328;
+    --muted: #61686f;
+    --accent: #2f6feb;
+    --accent-dark: #1f56c0;
+    --warn-bg: #fff6e0;
+    --warn-border: #e0b341;
+    --warn-text: #7a5300;
+    --err-bg: #fdeceb;
+    --err-border: #d1433a;
+    --err-text: #8d2721;
+    --ok-bg: #eaf5ec;
+    --ok-text: #1f6b32;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC",
+                 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 24px;
+  }
+  header h1 { margin: 0; font-size: 19px; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .card + .card { margin-top: 20px; }
+  h2.section {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .hint { color: var(--muted); font-size: 12px; font-weight: 400; }
+  textarea, select, input[type="file"] {
+    width: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    color: inherit;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+  }
+  textarea { resize: vertical; line-height: 1.6; }
+  #resumeText { min-height: 260px; }
+  #jobText { min-height: 130px; }
+  textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .row { margin-bottom: 16px; }
+  .row:last-child { margin-bottom: 0; }
+  .counter { font-size: 12px; color: var(--muted); margin-top: 4px; text-align: right; }
+  button {
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 11px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: var(--accent-dark); }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  button.secondary {
+    background: #fff; color: var(--text); border-color: var(--border);
+    font-size: 13px; font-weight: 500; padding: 8px 14px;
+  }
+  .filerow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .filerow input[type="file"] { flex: 1 1 220px; }
+  .msg { border-radius: 6px; padding: 10px 12px; font-size: 13.5px; margin-top: 10px; white-space: pre-wrap; }
+  .msg.warn { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); }
+  .msg.err  { background: var(--err-bg);  border: 1px solid var(--err-border);  color: var(--err-text); }
+  .msg.ok   { background: var(--ok-bg);   border: 1px solid #b8ddc0;            color: var(--ok-text); }
+  .msg strong { display: block; margin-bottom: 2px; }
+  .msg ul { margin: 6px 0 0; padding-left: 20px; }
+  .hidden { display: none !important; }
+  .promptdesc { margin-top: 6px; font-size: 12.5px; color: var(--muted); }
+  .submitbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid #c8d3e8; border-top-color: var(--accent);
+    animation: spin .8s linear infinite; display: inline-block; vertical-align: -3px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-note { font-size: 13px; color: var(--muted); }
+  .usage { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .stat {
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 11px; background: #fbfbfc; min-width: 92px;
+  }
+  .stat .k { font-size: 11.5px; color: var(--muted); }
+  .stat .v { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat.thought { background: #fff4e5; border-color: var(--warn-border); }
+  .stat.thought .k { color: var(--warn-text); }
+  .meta { font-size: 12.5px; color: var(--muted); margin-bottom: 14px; }
+  .meta code {
+    background: #eef0f3; padding: 1px 5px; border-radius: 4px;
+    font-family: Consolas, "Courier New", monospace; font-size: 12px;
+  }
+  .result { border-top: 1px solid var(--border); padding-top: 14px; }
+  .result h2, .result h3, .result h4 { margin: 18px 0 8px; line-height: 1.45; }
+  .result h2 { font-size: 16.5px; }
+  .result h3 { font-size: 15.5px; }
+  .result h4 { font-size: 14.5px; }
+  .result > :first-child { margin-top: 0; }
+  .result p { margin: 0 0 10px; }
+  .result ul, .result ol { margin: 0 0 12px; padding-left: 22px; }
+  .result li { margin-bottom: 5px; }
+  .result code {
+    background: #eef0f3; padding: 1px 5px; border-radius: 4px;
+    font-family: Consolas, "Courier New", monospace; font-size: 13px;
+  }
+  .result hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .placeholder { color: var(--muted); font-size: 13.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>AI 職涯學習助理</h1>
+  <p>貼上履歷或上傳 PDF，確認文字內容後送出分析。</p>
+</header>
+
+<main>
+  <!-- ============ 左欄：輸入 ============ -->
+  <section>
+    <div class="card">
+      <h2 class="section">1. 履歷內容</h2>
+
+      <div class="row">
+        <label for="pdfFile">上傳 PDF <span class="hint">（會抽出文字填入下方，讓你先確認）</span></label>
+        <div class="filerow">
+          <input type="file" id="pdfFile" accept="application/pdf,.pdf">
+          <button type="button" class="secondary" id="extractBtn" disabled>重新抽取</button>
+        </div>
+        <div id="pdfMsg" class="msg hidden"></div>
+      </div>
+
+      <div class="row">
+        <label for="resumeText">履歷全文 <span class="hint">（可直接貼上，或修正 PDF 抽出來的文字）</span></label>
+        <textarea id="resumeText" placeholder="把履歷內容貼在這裡，至少 20 個字。"></textarea>
+        <div class="counter"><span id="resumeCount">0</span> / 20000 字</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section">2. 職缺描述<span class="hint">（選填）</span></h2>
+      <textarea id="jobText" placeholder="貼上職缺描述，分析會對照著看。evidence_v1 需要這一欄。"></textarea>
+      <div class="counter"><span id="jobCount">0</span> / 20000 字</div>
+    </div>
+
+    <div class="card">
+      <h2 class="section">3. 分析方式</h2>
+      <div class="row">
+        <label for="promptSelect">Prompt</label>
+        <select id="promptSelect"><option value="">載入中…</option></select>
+        <div class="promptdesc" id="promptDesc"></div>
+      </div>
+      <div class="submitbar">
+        <button type="button" id="analyzeBtn" disabled>開始分析</button>
+        <span id="loadingNote" class="loading-note hidden">
+          <span class="spinner"></span>
+          分析進行中，通常需要 10-30 秒，請不要關閉頁面…（已等待 <span id="elapsed">0</span> 秒）
+        </span>
+      </div>
+      <div id="analyzeMsg" class="msg hidden"></div>
+    </div>
+  </section>
+
+  <!-- ============ 右欄：結果 ============ -->
+  <section>
+    <div class="card">
+      <h2 class="section">分析結果</h2>
+      <div id="usage" class="usage hidden"></div>
+      <div id="resultMeta" class="meta hidden"></div>
+      <div id="result" class="result">
+        <p class="placeholder">結果會顯示在這裡。</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var pdfFile     = $("pdfFile");
+  var extractBtn  = $("extractBtn");
+  var pdfMsg      = $("pdfMsg");
+  var resumeText  = $("resumeText");
+  var jobText     = $("jobText");
+  var promptSel   = $("promptSelect");
+  var promptDesc  = $("promptDesc");
+  var analyzeBtn  = $("analyzeBtn");
+  var analyzeMsg  = $("analyzeMsg");
+  var loadingNote = $("loadingNote");
+  var elapsedEl   = $("elapsed");
+  var usageEl     = $("usage");
+  var metaEl      = $("resultMeta");
+  var resultEl    = $("result");
+
+  var prompts = [];
+  var busy = false;
+  var timer = null;
+
+  // ---------- 共用小工具 ----------
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function showMsg(el, kind, title, body) {
+    el.className = "msg " + kind;
+    var html = "<strong>" + escapeHtml(title) + "</strong>";
+    if (Array.isArray(body)) {
+      html += "<ul>" + body.map(function (b) {
+        return "<li>" + escapeHtml(b) + "</li>";
+      }).join("") + "</ul>";
+    } else if (body) {
+      html += escapeHtml(body);
+    }
+    el.innerHTML = html;
+    el.classList.remove("hidden");
+  }
+
+  function hideMsg(el) {
+    el.classList.add("hidden");
+    el.innerHTML = "";
+  }
+
+  function fmtNum(n) {
+    return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  // FastAPI 的錯誤有兩種形狀：HTTPException 給字串 detail，
+  // pydantic 驗證失敗（422）給的是 list of {loc, msg, type}。兩種都要看得懂。
+  function describeError(status, payload) {
+    if (payload && typeof payload.detail === "string") {
+      return { title: "錯誤 " + status, body: payload.detail };
+    }
+    if (payload && Array.isArray(payload.detail)) {
+      return {
+        title: "錯誤 " + status + "：輸入不符合規格",
+        body: payload.detail.map(function (d) {
+          var where = Array.isArray(d.loc) ? d.loc.join(" / ") : "";
+          return (where ? where + "：" : "") + (d.msg || JSON.stringify(d));
+        })
+      };
+    }
+    if (payload && typeof payload === "object") {
+      return { title: "錯誤 " + status, body: JSON.stringify(payload) };
+    }
+    return { title: "錯誤 " + status, body: "伺服器沒有回傳可讀的錯誤訊息。" };
+  }
+
+  // 統一的 fetch：非 2xx 一律丟出帶 detail 的錯誤物件。
+  function request(url, options) {
+    return fetch(url, options).then(function (res) {
+      return res.text().then(function (raw) {
+        var payload = null;
+        try { payload = raw ? JSON.parse(raw) : null; } catch (e) { payload = null; }
+        if (!res.ok) {
+          var info = payload
+            ? describeError(res.status, payload)
+            : { title: "錯誤 " + res.status, body: raw ? raw.slice(0, 500) : res.statusText };
+          var err = new Error(info.title);
+          err.title = info.title;
+          err.body = info.body;
+          throw err;
+        }
+        return payload;
+      });
+    }, function (netErr) {
+      var err = new Error("連線失敗");
+      err.title = "連線失敗";
+      err.body = "無法連到後端（" + netErr.message + "）。請確認伺服器還在執行。";
+      throw err;
+    });
+  }
+
+  // ---------- 極簡 Markdown 渲染 ----------
+  // 不做完整解析，只處理模型實際會吐出來的：標題、粗體、行內 code、清單、分隔線、段落。
+
+  function renderInline(text) {
+    var out = escapeHtml(text);
+    out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
+    out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    out = out.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+    return out;
+  }
+
+  function renderMarkdown(src) {
+    var lines = String(src).replace(/\r\n?/g, "\n").split("\n");
+    var html = [];
+    var para = [];
+    var listType = null;   // "ul" | "ol" | null
+    var listItems = [];
+
+    function flushPara() {
+      if (!para.length) return;
+      html.push("<p>" + renderInline(para.join(" ")) + "</p>");
+      para = [];
+    }
+
+    function flushList() {
+      if (!listType) return;
+      html.push("<" + listType + ">" +
+        listItems.map(function (t) { return "<li>" + renderInline(t) + "</li>"; }).join("") +
+        "</" + listType + ">");
+      listType = null;
+      listItems = [];
+    }
+
+    function flushAll() { flushPara(); flushList(); }
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var trimmed = line.trim();
+
+      if (!trimmed) { flushAll(); continue; }
+
+      var heading = /^(#{1,6})\s+(.*)$/.exec(trimmed);
+      if (heading) {
+        flushAll();
+        // h1 降成 h2，避免壓過頁面本身的標題階層
+        var level = Math.min(heading[1].length + 1, 4);
+        html.push("<h" + level + ">" + renderInline(heading[2]) + "</h" + level + ">");
+        continue;
+      }
+
+      if (/^([-*_])\1{2,}$/.test(trimmed)) { flushAll(); html.push("<hr>"); continue; }
+
+      var bullet = /^[-*+]\s+(.*)$/.exec(trimmed);
+      if (bullet) {
+        flushPara();
+        if (listType !== "ul") { flushList(); listType = "ul"; }
+        listItems.push(bullet[1]);
+        continue;
+      }
+
+      var numbered = /^\d+[.)]\s+(.*)$/.exec(trimmed);
+      if (numbered) {
+        flushPara();
+        if (listType !== "ol") { flushList(); listType = "ol"; }
+        listItems.push(numbered[1]);
+        continue;
+      }
+
+      // 清單項目的續行（有縮排）：接回上一個項目，而不是另起段落。
+      if (listType && listItems.length && /^\s{2,}/.test(line)) {
+        listItems[listItems.length - 1] += " " + trimmed;
+        continue;
+      }
+
+      flushList();
+      para.push(trimmed);
+    }
+
+    flushAll();
+    return html.join("\n");
+  }
+
+  // ---------- /prompts ----------
+
+  function currentPrompt() {
+    var key = promptSel.value;
+    for (var i = 0; i < prompts.length; i++) {
+      if (prompts[i].key === key) return prompts[i];
+    }
+    return null;
+  }
+
+  function updatePromptDesc() {
+    var p = currentPrompt();
+    promptDesc.textContent = p ? p.description : "";
+  }
+
+  function loadPrompts() {
+    request("/prompts").then(function (list) {
+      prompts = list || [];
+      promptSel.innerHTML = "";
+      prompts.forEach(function (p) {
+        var opt = document.createElement("option");
+        opt.value = p.key;
+        opt.textContent = p.name + " " + p.version + "（" + p.key + "）";
+        promptSel.appendChild(opt);
+      });
+      if (prompts.length) {
+        var preferred = prompts.filter(function (p) { return p.key === "analyze_v1"; });
+        promptSel.value = preferred.length ? preferred[0].key : prompts[0].key;
+      }
+      updatePromptDesc();
+      syncAnalyzeBtn();
+    }).catch(function (err) {
+      promptSel.innerHTML = "<option value=\"\">載入失敗</option>";
+      showMsg(analyzeMsg, "err", err.title || "無法載入 prompt 清單", err.body);
+    });
+  }
+
+  // ---------- /extract/pdf ----------
+
+  function extractPdf() {
+    var file = pdfFile.files && pdfFile.files[0];
+    if (!file) return;
+
+    hideMsg(pdfMsg);
+    extractBtn.disabled = true;
+    var oldLabel = extractBtn.textContent;
+    extractBtn.textContent = "抽取中…";
+
+    var form = new FormData();
+    form.append("file", file, file.name);
+
+    request("/extract/pdf", { method: "POST", body: form }).then(function (data) {
+      // 刻意只填進 textarea，不直接送分析：使用者確認過的文字才是分析的依據。
+      resumeText.value = data.text || "";
+      updateCounts();
+      syncAnalyzeBtn();
+
+      var summary = "共 " + data.page_count + " 頁，抽出 " + fmtNum(data.char_count) + " 個字。"
+                  + "請確認下方文字是否正確，可以直接修改後再送出分析。";
+      if (data.warning) {
+        showMsg(pdfMsg, "warn", "注意：" + data.warning, summary);
+      } else {
+        showMsg(pdfMsg, "ok", "已抽取文字，請確認內容", summary);
+      }
+      resumeText.focus();
+      resumeText.setSelectionRange(0, 0);
+      resumeText.scrollTop = 0;
+    }).catch(function (err) {
+      showMsg(pdfMsg, "err", err.title || "抽取失敗", err.body);
+    }).then(function () {
+      extractBtn.textContent = oldLabel;
+      extractBtn.disabled = !(pdfFile.files && pdfFile.files.length);
+    });
+  }
+
+  // ---------- /analyze ----------
+
+  function setBusy(on) {
+    busy = on;
+    loadingNote.classList.toggle("hidden", !on);
+    analyzeBtn.textContent = on ? "分析中…" : "開始分析";
+    syncAnalyzeBtn();
+
+    if (timer) { clearInterval(timer); timer = null; }
+    if (on) {
+      var started = Date.now();
+      elapsedEl.textContent = "0";
+      timer = setInterval(function () {
+        elapsedEl.textContent = String(Math.floor((Date.now() - started) / 1000));
+      }, 1000);
+    }
+  }
+
+  function syncAnalyzeBtn() {
+    // 分析途中一律鎖住按鈕，避免重複送出。
+    var ready = !busy && resumeText.value.trim().length >= 20 && !!promptSel.value;
+    analyzeBtn.disabled = !ready;
+  }
+
+  function renderUsage(data) {
+    var u = data.usage || {};
+    var stats = [
+      { k: "輸入 token", v: fmtNum(u.prompt_tokens || 0), cls: "" },
+      { k: "思考 token", v: fmtNum(u.thought_tokens || 0), cls: "thought" },
+      { k: "輸出 token", v: fmtNum(u.output_tokens || 0), cls: "" },
+      { k: "總計 token", v: fmtNum(u.total_tokens || 0), cls: "" },
+      { k: "耗時", v: (data.elapsed_ms / 1000).toFixed(1) + " 秒", cls: "" }
+    ];
+    usageEl.innerHTML = stats.map(function (s) {
+      return "<div class=\"stat " + s.cls + "\">" +
+               "<div class=\"k\">" + escapeHtml(s.k) + "</div>" +
+               "<div class=\"v\">" + escapeHtml(s.v) + "</div>" +
+             "</div>";
+    }).join("");
+    usageEl.classList.remove("hidden");
+
+    var share = "";
+    if (u.total_tokens) {
+      share = " ・ 思考 token 佔總量 "
+            + Math.round((u.thought_tokens || 0) / u.total_tokens * 100) + "%";
+    }
+    metaEl.innerHTML = "模型 <code>" + escapeHtml(data.model) + "</code>"
+                     + " ・ prompt <code>" + escapeHtml(data.prompt) + "</code>"
+                     + " ・ " + escapeHtml(fmtNum(data.elapsed_ms) + " ms" + share);
+    metaEl.classList.remove("hidden");
+  }
+
+  function runAnalyze() {
+    if (busy) return;
+
+    var resume = resumeText.value.trim();
+    if (resume.length < 20) {
+      showMsg(analyzeMsg, "err", "履歷太短",
+              "履歷全文至少要 20 個字，目前只有 " + resume.length + " 個字。");
+      return;
+    }
+
+    hideMsg(analyzeMsg);
+    setBusy(true);
+    resultEl.innerHTML = "<p class=\"placeholder\">分析中，請稍候…</p>";
+    usageEl.classList.add("hidden");
+    metaEl.classList.add("hidden");
+
+    var job = jobText.value.trim();
+    var body = { resume_text: resume, prompt: promptSel.value };
+    if (job) body.job_text = job;
+
+    request("/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    }).then(function (data) {
+      renderUsage(data);
+      resultEl.innerHTML = renderMarkdown(data.analysis || "");
+    }).catch(function (err) {
+      showMsg(analyzeMsg, "err", err.title || "分析失敗", err.body);
+      resultEl.innerHTML = "<p class=\"placeholder\">這次沒有產生結果，錯誤訊息顯示在左邊。</p>";
+    }).then(function () {
+      setBusy(false);
+    });
+  }
+
+  // ---------- 綁定 ----------
+
+  function updateCounts() {
+    $("resumeCount").textContent = fmtNum(resumeText.value.length);
+    $("jobCount").textContent = fmtNum(jobText.value.length);
+  }
+
+  pdfFile.addEventListener("change", function () {
+    hideMsg(pdfMsg);
+    var has = !!(pdfFile.files && pdfFile.files.length);
+    extractBtn.disabled = !has;
+    if (has) extractPdf();   // 選完檔就抽，按鈕留給抽取失敗時重試
+  });
+  extractBtn.addEventListener("click", extractPdf);
+  resumeText.addEventListener("input", function () { updateCounts(); syncAnalyzeBtn(); });
+  jobText.addEventListener("input", updateCounts);
+  promptSel.addEventListener("change", updatePromptDesc);
+  analyzeBtn.addEventListener("click", runAnalyze);
+
+  updateCounts();
+  loadPrompts();
+})();
+</script>
+</body>
+</html>

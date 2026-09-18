@@ -31,6 +31,30 @@ status: draft
 
 ---
 
+
+## 素材：從 Day 04 移過來
+
+### 最便宜的失敗處理是不要發出那個請求
+
+Day 04 寫的第一個測試
+
+```python
+def test_resume_too_short_is_rejected_before_calling_model():
+    r = client.post("/analyze", json={"resume_text": "太短"})
+    assert r.status_code == 422
+```
+
+`min_length=20` 讓明顯無效的輸入在 pydantic 那層就被擋掉，不會變成一次付費呼叫
+
+其他測試用 monkeypatch 把 `analyze` 換掉，驗的是錯誤轉換
+也就是 `AnalyzerError` 的 502 / 503 有沒有正確變成 HTTP 狀態碼
+
+而這邊要注意的是測試不打真的 API，不然跑一次 CI 就是一次帳單
+
+今天要處理的是「請求送出去之後才失敗」的那些情況
+
+---
+
 <!-- 發文前檢查
 - [ ] 內文 300 字以上，且切題
 - [ ] 履歷資料全部虛構，沒有用到任何真實履歷（含自己的）

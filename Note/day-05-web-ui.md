@@ -2,14 +2,14 @@
 day: 05
 chapter: 1
 chapter_title: 從想法到第一個可操作版本
-title: 讓作品看得見：打造履歷輸入與分析結果的網頁 UI
+title: 讓作品看得見：用單頁 HTML 接上分析端點
 date: 2026-09-19
 status: draft
 ---
 
-# Day 05｜讓作品看得見：打造履歷輸入與分析結果的網頁 UI
+# Day 05｜讓作品看得見：用單頁 HTML 接上分析端點
 
-> **今天要做**：FastAPI + 單頁 HTML，輸入框、結果區、載入與錯誤狀態。動手前先看一眼 adk deploy cloud_run --with_ui 附的 dev UI 夠不夠用，夠的話這篇改寫成「為什麼我不自己刻前端」。不做 React。
+> **今天要做**：單頁 HTML 接 Day 04 的 `/analyze`，做輸入框、結果區、載入與錯誤狀態。動手前先看一眼 `adk deploy cloud_run --with_ui` 附的 dev UI 夠不夠用，夠的話這篇改寫成「為什麼我不自己刻前端」。不做 React。
 >
 > **今天的產出物**：（這天結束時 repo 裡多了什麼檔案／端點／資料）
 

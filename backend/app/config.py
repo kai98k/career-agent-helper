@@ -10,8 +10,14 @@ load_dotenv()
 
 class Settings:
     project_id: str = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
-    location: str = os.environ.get("GOOGLE_CLOUD_LOCATION", "asia-east1")
-    use_vertexai: bool = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "True") == "True"
+    location: str = os.environ.get("GOOGLE_CLOUD_LOCATION", "global")
+    # SDK 2.22 同時讀 GOOGLE_GENAI_USE_ENTERPRISE 與 GOOGLE_GENAI_USE_VERTEXAI，
+    # 前者優先、衝突時發警告。這裡照同樣的順序與值判斷，避免兩邊結論不一致。
+    use_vertexai: bool = (
+        os.environ.get("GOOGLE_GENAI_USE_ENTERPRISE")
+        or os.environ.get("GOOGLE_GENAI_USE_VERTEXAI")
+        or "True"
+    ).lower() in ("true", "1")
     model: str = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
     app_env: str = os.environ.get("APP_ENV", "local")

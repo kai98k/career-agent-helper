@@ -31,6 +31,32 @@ status: draft
 
 ---
 
+
+## 素材：從 Day 04 移過來
+
+### 為什麼 Day 04 的回應沒辦法用
+
+Day 04 的 `AnalyzeResponse.analysis` 是一整段自由文字，這是刻意的
+
+程式拿這段文字沒辦法做任何判斷
+數不出它給了幾點建議
+檢查不了每一點有沒有指回履歷原文
+也比較不出兩次結果哪次比較好
+
+今天要解決的就是這件事
+
+（Day 04 的契約長這樣，可以拿來當對照組）
+
+```python
+class AnalyzeResponse(BaseModel):
+    model: str
+    analysis: str        # 一整段 Markdown
+    usage: Usage
+    elapsed_ms: int
+```
+
+---
+
 <!-- 發文前檢查
 - [ ] 內文 300 字以上，且切題
 - [ ] 履歷資料全部虛構，沒有用到任何真實履歷（含自己的）

@@ -17,7 +17,9 @@ AI 職涯學習助理：讀一份履歷與一則職缺，做出**有證據可追
 ## 技術棧
 
 Python 3.12、google-genai、google-adk>=2.0、google-cloud-aiplatform[agent_engines,adk]>=1.112、
-FastAPI + 單頁 HTML、pypdf、Agent Runtime（asia-east1）、Cloud Trace / Logging / Monitoring。
+FastAPI + 單頁 HTML、pypdf、Agent Runtime、Cloud Trace / Logging / Monitoring。
+
+模型呼叫的 region 用 `global`（`asia-east1` 實測沒有任何 Gemini 模型，見 Day 03）。Agent Runtime 的部署區域是另一件事，待 Day 19 實際部署確認。
 
 ## 目錄
 
@@ -37,16 +39,20 @@ evals/           評估規準、批次執行與報表（Day 25–29）
 
 ## 開始
 
+這是 monorepo，每個 package 管自己的相依。Python 的 venv 在 `backend/`。
+
 ```bash
+cd backend
 py -3.12 -m venv .venv
 .venv/Scripts/activate          # macOS/Linux: source .venv/bin/activate
-pip install -r backend/requirements.lock.txt   # 釘死的版本；新增套件時改 requirements.txt 再重新 freeze
+pip install -r requirements.lock.txt   # 釘死的版本；新增套件請改 requirements.txt 再重新 freeze
 
 cp .env.example .env            # 填入 GOOGLE_CLOUD_PROJECT
 gcloud auth application-default login
 
-python backend/scripts/smoke_gemini.py   # 五行呼叫，確認環境通了
-cd backend && uvicorn app.main:app --reload
+python scripts/smoke_gemini.py  # 五行呼叫，確認環境通了
+python scripts/quickstart.py    # 官方快速入門範例（gemini-3.5-flash）
+uvicorn app.main:app --reload
 ```
 
 `GET /healthz` 會回報目前的 region、模型與 project 是否已設定。

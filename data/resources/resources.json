@@ -1,0 +1,68 @@
+[
+  {
+    "id": "py-official-tutorial",
+    "title": "The Python Tutorial (官方教學)",
+    "url": "https://docs.python.org/3/tutorial/",
+    "kind": "doc",
+    "topics": ["python", "programming-basics"],
+    "hours": 12,
+    "language": "en",
+    "verified": false,
+    "verified_at": null
+  },
+  {
+    "id": "fastapi-docs",
+    "title": "FastAPI 官方文件",
+    "url": "https://fastapi.tiangolo.com/",
+    "kind": "doc",
+    "topics": ["fastapi", "python", "web-api"],
+    "hours": 8,
+    "language": "en",
+    "verified": false,
+    "verified_at": null
+  },
+  {
+    "id": "postgres-tutorial",
+    "title": "PostgreSQL 官方文件 Tutorial",
+    "url": "https://www.postgresql.org/docs/current/tutorial.html",
+    "kind": "doc",
+    "topics": ["postgresql", "sql", "database"],
+    "hours": 10,
+    "language": "en",
+    "verified": false,
+    "verified_at": null
+  },
+  {
+    "id": "docker-getstarted",
+    "title": "Docker Get Started",
+    "url": "https://docs.docker.com/get-started/",
+    "kind": "doc",
+    "topics": ["docker", "containers", "devops"],
+    "hours": 6,
+    "language": "en",
+    "verified": false,
+    "verified_at": null
+  },
+  {
+    "id": "k8s-basics",
+    "title": "Kubernetes Basics",
+    "url": "https://kubernetes.io/docs/tutorials/kubernetes-basics/",
+    "kind": "tutorial",
+    "topics": ["kubernetes", "containers", "devops"],
+    "hours": 8,
+    "language": "en",
+    "verified": false,
+    "verified_at": null
+  },
+  {
+    "id": "git-pro-book",
+    "title": "Pro Git (繁體中文版)",
+    "url": "https://git-scm.com/book/zh-tw/v2",
+    "kind": "book",
+    "topics": ["git", "version-control"],
+    "hours": 10,
+    "language": "zh-TW",
+    "verified": false,
+    "verified_at": null
+  }
+]
