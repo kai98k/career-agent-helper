@@ -49,15 +49,8 @@ cd backend
 uvicorn app.main:app --reload
 ```
 
-`/healthz` 刻意不是只回 `{"status": "ok"}`
-它要順便告訴我現在讀到的是哪個 project、哪個 region、哪個模型
-
-昨天那支腳本炸掉的時候，八成是這三個其中之一沒讀到
-把它做成一個隨時可以打的端點，比每次回去加 `print` 快
-
 `--reload` 只在本機用，改完檔案會自己重啟
 開 http://127.0.0.1:8000/docs 就有 Swagger，之後每加一個端點都會自己出現在上面，不用另外寫測試頁
-
 版本：Python 3.12.10、fastapi 0.141.1、uvicorn 0.52.4
 
 ## 端點
@@ -116,11 +109,11 @@ Console 的預算設定有兩種，差別很大
 
 ![https://ithelp.ithome.com.tw/upload/images/20260918/20184275Cx8wfzj9L1.png](https://ithelp.ithome.com.tw/upload/images/20260918/20184275Cx8wfzj9L1.png)
 
+Github Repo 連結:
+https://github.com/kai98k/career-agent-helper
 ## 明天
 
 把這個端點接上畫面
-動手之前要先確認一件事：ADK 自帶的 dev UI 夠不夠用
-夠的話，這篇就會變成「為什麼我不自己刻前端」!
 ---
 
 <!-- 待補

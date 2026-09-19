@@ -25,7 +25,7 @@
 | 02 | 09/16 | [認識 Gemini Enterprise Agent Platform：模型、SDK、ADK 與 Runtime 各做什麼？](./day-02-agent-platform-overview.md) | draft |
 | 03 | 09/17 | [從零到第一次呼叫：環境建置排查紀錄](./day-03-environment-setup.md) | draft |
 | 04 | 09/18 | [把一次性腳本變成服務：FastAPI 端點與第一筆帳單](./day-04-fastapi-endpoint.md) | draft |
-| 05 | 09/19 | [讓作品看得見：用單頁 HTML 接上分析端點](./day-05-web-ui.md) | draft |
+| 05 | 09/19 | [讓作品看得見：用單頁 HTML 接上分析端點](./day-05-web-ui.md) | writing |
 
 ### 第2章：讓履歷分析有依據
 

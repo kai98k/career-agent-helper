@@ -24,3 +24,6 @@ evals/reports/*
 
 # Git Bash crash dump
 *.stackdump
+
+# adk web 會在 agent 目錄底下自建本機 session 資料庫，裡面可能有貼過的履歷
+.adk/
