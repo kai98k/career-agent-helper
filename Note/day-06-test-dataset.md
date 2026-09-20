@@ -24,6 +24,8 @@ Day 08 要測 PDF，我很可能隨手丟一份真的進去再 `git add .`
 
 ```gitignore
 *
+!.gitignore
+!.gitkeep
 !sample-*.txt
 !sample-*.pdf
 ```
