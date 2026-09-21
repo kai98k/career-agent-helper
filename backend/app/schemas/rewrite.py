@@ -7,7 +7,7 @@
 
 from pydantic import BaseModel, Field
 
-from app.schemas.resume import SCHEMA_VERSION
+from app.schemas.resume import SCHEMA_VERSION, SchemaVersion
 
 
 class RewriteItem(BaseModel):
@@ -31,7 +31,7 @@ class RewriteItem(BaseModel):
 
 
 class RewriteReport(BaseModel):
-    schema_version: str = SCHEMA_VERSION
+    schema_version: SchemaVersion = Field(default=SCHEMA_VERSION, validate_default=True)
     items: list[RewriteItem] = Field(default_factory=list)
 
     @property

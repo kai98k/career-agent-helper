@@ -9,7 +9,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-from app.schemas.resume import SCHEMA_VERSION
+from app.schemas.resume import SCHEMA_VERSION, SchemaVersion
 
 
 class PlanItem(BaseModel):
@@ -26,7 +26,7 @@ class PlanItem(BaseModel):
 
 
 class LearningPlan(BaseModel):
-    schema_version: str = SCHEMA_VERSION
+    schema_version: SchemaVersion = Field(default=SCHEMA_VERSION, validate_default=True)
     weekly_hours_budget: float = Field(default=10.0, description="使用者每週可投入的時數")
     total_hours: float = Field(default=0.0, description="模型自己宣稱的總時數")
     items: list[PlanItem] = Field(default_factory=list)

@@ -8,7 +8,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-from app.schemas.resume import SCHEMA_VERSION
+from app.schemas.resume import SCHEMA_VERSION, SchemaVersion
 
 
 class MatchVerdict(str, Enum):
@@ -41,7 +41,7 @@ class RequirementMatch(BaseModel):
 
 
 class MatchReport(BaseModel):
-    schema_version: str = SCHEMA_VERSION
+    schema_version: SchemaVersion = Field(default=SCHEMA_VERSION, validate_default=True)
     matches: list[RequirementMatch] = Field(default_factory=list)
 
     @property
