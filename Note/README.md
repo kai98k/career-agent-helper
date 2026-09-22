@@ -33,7 +33,7 @@
 | --- | --- | --- | --- |
 | 06 | 09/20 | [先有測試案例，再談 AI 準不準：建立虛構履歷與職缺資料集](./day-06-test-dataset.md) | writing |
 | 07 | 09/21 | [讓模型輸出可被程式使用：履歷與職缺的結構化解析](./day-07-structured-output.md) | draft |
-| 08 | 09/22 | [從貼文字到上傳 PDF：解析履歷、處理失敗與確認內容](./day-08-pdf-upload.md) | draft |
+| 08 | 09/22 | [從貼文字到上傳 PDF：解析履歷、處理失敗與確認內容](./day-08-pdf-upload.md) | writing |
 | 09 | 09/23 | [沒寫到不等於不會：建立職缺要求與履歷證據對照](./day-09-evidence-matching.md) | draft |
 | 10 | 09/24 | [改得更清楚，而不是編得更厲害：不捏造經歷的履歷改寫](./day-10-honest-rewrite.md) | draft |
 
