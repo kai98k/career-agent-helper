@@ -10,8 +10,9 @@ from pydantic import BaseModel, Field
 from app import prompts
 from app.agent.runner import AgentSession
 from app.config import get_settings
+from app.schemas.clarify import Answer
 from app.schemas.report import AnalysisReport
-from app.services import pipeline
+from app.services import pipeline, resources
 from app.schemas.analysis import AnalyzeRequest, AnalyzeResponse, PdfExtractResponse
 from app.services.analyzer import AnalyzerError, analyze
 from app.services.llm import LlmError
@@ -84,6 +85,14 @@ class FullAnalyzeRequest(BaseModel):
     weekly_hours: float = Field(default=10.0, gt=0, le=60)
     do_rewrite: bool = True
     do_plan: bool = True
+    do_clarify: bool = True
+    answers: list[Answer] = Field(default_factory=list, max_length=10)
+
+
+@app.get("/resources")
+def list_resources() -> list[dict]:
+    """只回人工核實過的資源，前端用 id 對回計畫裡的 resource_ids。"""
+    return [r.model_dump() for r in resources.verified_only()]
 
 
 @app.post("/analyze/full", response_model=AnalysisReport)
@@ -96,6 +105,8 @@ def analyze_full(req: FullAnalyzeRequest) -> AnalysisReport:
             do_rewrite=req.do_rewrite,
             do_plan=req.do_plan,
             weekly_hours=req.weekly_hours,
+            do_clarify=req.do_clarify,
+            answers=req.answers,
         )
     except LlmError as e:
         raise HTTPException(status_code=e.status_code, detail=str(e)) from e

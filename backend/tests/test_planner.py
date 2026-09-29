@@ -68,3 +68,22 @@ def test_hallucinated_resource_id_is_caught():
     vs = [v for v in validate(p).violations if v.kind is ViolationKind.UNKNOWN_RESOURCE]
     assert len(vs) == 1
     assert "udemy-course-12345" in vs[0].detail
+
+
+def test_non_positive_hours_is_caught():
+    p = _plan([PlanItem(week=1, topic="A", hours=0)])
+    kinds = [v.kind for v in validate(p).violations]
+    assert ViolationKind.NON_POSITIVE_HOURS in kinds
+
+
+def test_plan_schema_is_accepted_by_genai():
+    """Field(gt=0) 會產生 exclusiveMinimum，genai 的 Schema 不收，實際呼叫前就會炸。"""
+    from google.genai import _transformers
+
+    _transformers.t_schema(None, LearningPlan)  # 不丟例外就算過
+
+
+def test_empty_plan_can_be_allowed_explicitly():
+    """固定流程允許「沒有要補的」，但預設（agent 工具）仍然擋。"""
+    assert validate(_plan([]), allow_empty=True).ok
+    assert not validate(_plan([])).ok

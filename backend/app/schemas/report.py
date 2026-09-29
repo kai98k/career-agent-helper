@@ -7,6 +7,7 @@
 
 from pydantic import BaseModel, Field
 
+from app.schemas.clarify import Answer, ClarifyingQuestion
 from app.schemas.matching import MatchReport
 from app.schemas.plan import ValidatedPlan
 from app.schemas.resume import SCHEMA_VERSION, ParsedJob, ParsedResume
@@ -28,6 +29,8 @@ class AnalysisReport(BaseModel):
     resume: ParsedResume
     job: ParsedJob | None = None
     matching: MatchReport | None = None
+    questions: list[ClarifyingQuestion] = Field(default_factory=list)
+    answers: list[Answer] = Field(default_factory=list)
     rewrite: RewriteReport | None = None
     plan: ValidatedPlan | None = None
     usage: UsageSummary = Field(default_factory=UsageSummary)

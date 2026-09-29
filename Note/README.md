@@ -33,23 +33,23 @@
 | --- | --- | --- | --- |
 | 06 | 09/20 | [先有測試案例，再談 AI 準不準：建立虛構履歷與職缺資料集](./day-06-test-dataset.md) | writing |
 | 07 | 09/21 | [讓模型輸出可被程式使用：履歷與職缺的結構化解析](./day-07-structured-output.md) | draft |
-| 08 | 09/22 | [從貼文字到上傳 PDF：解析履歷、處理失敗與確認內容](./day-08-pdf-upload.md) | draft |
-| 09 | 09/23 | [沒寫到不等於不會：建立職缺要求與履歷證據對照](./day-09-evidence-matching.md) | draft |
-| 10 | 09/24 | [改得更清楚，而不是編得更厲害：不捏造經歷的履歷改寫](./day-10-honest-rewrite.md) | draft |
+| 08 | 09/22 | [從貼文字到上傳 PDF：解析履歷、處理失敗與確認內容](./day-08-pdf-upload.md) | published |
+| 09 | 09/23 | [沒寫到不等於不會：建立職缺要求與履歷證據對照](./day-09-evidence-matching.md) | published |
+| 10 | 09/24 | [改得更清楚，而不是編得更厲害：不捏造經歷的履歷改寫](./day-10-honest-rewrite.md) | writing |
 
 ### 第3章：從分析結果走向學習行動
 
 | Day | 日期 | 標題 | 狀態 |
 | --- | --- | --- | --- |
-| 11 | 09/25 | [先問清楚再下結論：設計技能與經驗的澄清流程](./day-11-clarifying-questions.md) | draft |
-| 12 | 09/26 | [別讓 AI 憑空排課：產生個人化學習計畫，並用程式檢查時數與先修條件](./day-12-learning-plan-validation.md) | draft |
-| 13 | 09/27 | [把建議變成可操作的介面：證據卡片、改寫對照與學習路線](./day-13-result-ui.md) | draft |
+| 11 | 09/25 | [先問清楚再下結論：設計技能與經驗的澄清流程](./day-11-clarifying-questions.md) | writing |
+| 12 | 09/26 | [別讓 AI 憑空排課：產生個人化學習計畫，並用程式檢查時數與先修條件](./day-12-learning-plan-validation.md) | writing |
+| 13 | 09/27 | [把建議變成可操作的介面：證據卡片、改寫對照與學習路線](./day-13-result-ui.md) | writing |
 
 ### 第4章：讓 Agent 有狀態，也有界線
 
 | Day | 日期 | 標題 | 狀態 |
 | --- | --- | --- | --- |
-| 14 | 09/28 | [什麼時候才需要 Agent？把固定流程接上 Google ADK](./day-14-adk-when-and-why.md) | draft |
+| 14 | 09/28 | [什麼時候才需要 Agent？把固定流程接上 Google ADK](./day-14-adk-when-and-why.md) | writing |
 | 15 | 09/29 | [工具不是越多越好：設計查詢資源與驗證計畫的 Tool](./day-15-typed-tools.md) | draft |
 | 16 | 09/30 | [讓對話延續：用 Sessions 保存澄清答案與計畫修訂](./day-16-sessions.md) | draft |
 | 17 | 10/01 | [這份履歷只屬於這次分析：使用者隔離、資料保留與刪除](./day-17-privacy-and-deletion.md) | draft |

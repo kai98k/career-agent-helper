@@ -29,6 +29,9 @@ _PROMPT = """根據下面的落差分析，排一份學習計畫。
    清單裡沒有適合的就留空，**不要自己編 id，也不要編課程名稱或網址**。
 4. 每一週的時數加總不可以超過 {budget} 小時。
 5. total_hours 填所有項目時數的加總。
+6. 有些要求是背景條件（學歷、是否本科、年資），不是學了就會有的。
+   這類不要排進計畫，也不要為了「證明」它去排課。
+7. 不需要把 {weeks} 週排滿。真正要補的東西少，計畫就短；沒有要補的，items 可以是空的。
 
 【落差分析】
 {gaps}
@@ -37,13 +40,30 @@ _PROMPT = """根據下面的落差分析，排一份學習計畫。
 {resource_list}"""
 
 
-def validate(plan: LearningPlan) -> ValidatedPlan:
-    """純程式驗證。不呼叫模型，也不該呼叫。"""
+def validate(plan: LearningPlan, *, allow_empty: bool = False) -> ValidatedPlan:
+    """純程式驗證。不呼叫模型，也不該呼叫。
+
+    allow_empty：固定流程裡，模型判斷「沒有要補的」而回空計畫是合理的結果。
+    但 agent 的工具不能放寬 —— agent 傳錯欄位名稱時，pydantic 會忽略不認得的 key，
+    items 就變成空的，這時候空計畫是唯一的線索。
+    """
     v: list[Violation] = []
 
     if not plan.items:
-        v.append(Violation(kind=ViolationKind.EMPTY_PLAN, detail="計畫裡一個項目都沒有"))
+        if not allow_empty:
+            v.append(Violation(kind=ViolationKind.EMPTY_PLAN, detail="計畫裡一個項目都沒有"))
         return ValidatedPlan(plan=plan, violations=v)
+
+    # 0) 每一項時數必須大於 0
+    for i in plan.items:
+        if i.hours <= 0:
+            v.append(
+                Violation(
+                    kind=ViolationKind.NON_POSITIVE_HOURS,
+                    week=i.week,
+                    detail=f"「{i.topic}」的時數是 {i.hours}，必須大於 0",
+                )
+            )
 
     # 1) 宣稱的總時數 vs 實際加總
     actual = round(sum(i.hours for i in plan.items), 2)
@@ -133,4 +153,4 @@ def generate_and_validate(
     gaps: str, *, weekly_hours: float = 10.0, weeks: int = 8
 ) -> tuple[ValidatedPlan, Result[LearningPlan]]:
     result = generate(gaps, weekly_hours=weekly_hours, weeks=weeks)
-    return validate(result.data), result
+    return validate(result.data, allow_empty=True), result

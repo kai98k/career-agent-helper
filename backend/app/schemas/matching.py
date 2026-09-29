@@ -31,6 +31,8 @@ class RequirementMatch(BaseModel):
     quote_start: int | None = None
     quote_end: int | None = None
     verification_note: str | None = None
+    # 引用落在哪裡：resume = 原履歷，user_answer = 使用者回答澄清問題的補充（Day 11）
+    quote_source: str | None = None
 
     @property
     def trustworthy(self) -> bool:

@@ -15,7 +15,10 @@ from app.schemas.resume import SCHEMA_VERSION, SchemaVersion
 class PlanItem(BaseModel):
     week: int = Field(ge=1, description="第幾週，從 1 開始")
     topic: str
-    hours: float = Field(gt=0, description="這一項預估要花的時數")
+    # 不用 Field(gt=0)：它會變成 JSON Schema 的 exclusiveMinimum，
+    # google-genai 的 Schema 不收這個欄位，整個請求在送出前就被擋掉。
+    # 時數要大於 0 改由 planner.validate 用程式檢查。
+    hours: float = Field(description="這一項預估要花的時數，必須大於 0")
     prerequisites: list[str] = Field(
         default_factory=list, description="必須先完成的 topic 名稱，要跟其他項目的 topic 完全一致"
     )
@@ -39,6 +42,7 @@ class ViolationKind(str, Enum):
     PREREQ_UNKNOWN = "prereq_unknown"
     UNKNOWN_RESOURCE = "unknown_resource"
     EMPTY_PLAN = "empty_plan"
+    NON_POSITIVE_HOURS = "non_positive_hours"
 
 
 class Violation(BaseModel):

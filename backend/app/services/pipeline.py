@@ -10,8 +10,9 @@
 
 import time
 
+from app.schemas.clarify import Answer
 from app.schemas.report import AnalysisReport, UsageSummary
-from app.services import matcher, parser, planner, rewriter
+from app.services import clarifier, matcher, parser, planner, rewriter
 from app.services.llm import Usage
 
 
@@ -30,11 +31,14 @@ def _gaps_text(report) -> str:
 
     只餵「找不到證據」的項目，因為計畫要補的是缺口。
     有明確證據的那些不需要再學一次。
+
+    第一版這裡寫的是「缺：」，模型照字面讀，幫一年經驗的後端排了四週 SQL 入門。
+    not_found 的意思是履歷沒寫，不是不會，給計畫的字眼也要照這個意思寫。
     """
     lines = []
     for m in report.matches:
         if m.verdict.value == "not_found":
-            lines.append(f"- 缺：{m.requirement}")
+            lines.append(f"- 履歷沒有證據（不確定會不會）：{m.requirement}")
         elif m.verdict.value == "indirect":
             lines.append(f"- 證據薄弱：{m.requirement}（{m.reasoning}）")
     return "\n".join(lines) or "（沒有明顯缺口）"
@@ -47,6 +51,8 @@ def run(
     do_rewrite: bool = True,
     do_plan: bool = True,
     weekly_hours: float = 10.0,
+    do_clarify: bool = True,
+    answers: list[Answer] | None = None,
 ) -> AnalysisReport:
     started = time.perf_counter()
     usage = Usage()
@@ -61,16 +67,27 @@ def run(
         usage, calls = usage + j.usage, calls + 1
         report.job = j.data
 
-        m = matcher.match(j.data, resume_text)
+        supplement = clarifier.supplement(answers or [])
+        m = matcher.match(j.data, resume_text, supplement or None)
         usage, calls = usage + m.usage, calls + 1
         report.matching = m.data
+        report.answers = answers or []
+
+        # 還沒回答過才問。回答過的那一輪直接往下走，不再追問第二輪。
+        if do_clarify and not answers:
+            c = clarifier.ask(resume_text, m.data)
+            if c is not None:
+                usage, calls = usage + c.usage, calls + 1
+                report.questions = c.data.questions
 
     if do_rewrite:
         w = rewriter.rewrite(resume_text, job_text)
         usage, calls = usage + w.usage, calls + 1
         report.rewrite = w.data
 
-    if do_plan and report.matching:
+    # 還有問題沒回答，就先不排計畫。第一版照樣排，結果畫面上一邊問「你會 SQL 嗎」，
+    # 下面已經幫他排好兩週 SQL 入門，等於問了也沒在等答案。
+    if do_plan and report.matching and not report.questions:
         validated, p = planner.generate_and_validate(
             _gaps_text(report.matching), weekly_hours=weekly_hours
         )

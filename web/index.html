@@ -144,6 +144,47 @@
   }
   .result hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
   .placeholder { color: var(--muted); font-size: 13.5px; }
+
+  /* ---------- 完整分析結果（Day 13） ---------- */
+  .fullbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px;
+             padding-top: 14px; border-top: 1px dashed var(--border); }
+  .fullbar input[type="number"] { width: 70px; padding: 7px 8px; font: inherit; font-size: 14px;
+             border: 1px solid var(--border); border-radius: 6px; }
+  .fullbar .hint { flex-basis: 100%; }
+  .block { margin-top: 22px; }
+  .block > h3 { font-size: 15px; margin: 0 0 10px; display: flex; align-items: baseline; gap: 8px; }
+  .block > h3 .hint { font-weight: 400; }
+  .ev { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .ev.bad { border-color: var(--err-border); background: #fffafa; }
+  .ev .req { font-weight: 600; font-size: 14px; }
+  .ev .why { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .ev blockquote { margin: 6px 0 0; padding: 4px 10px; border-left: 3px solid var(--border);
+                   background: #fafbfc; font-size: 13.5px; }
+  .ev blockquote.user { border-left-color: var(--warn-border); background: var(--warn-bg); }
+  .src { font-size: 11.5px; color: var(--muted); display: block; }
+  .badge { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 1px 8px;
+           border-radius: 999px; margin-right: 6px; vertical-align: 1px; }
+  .badge.direct { background: var(--ok-bg); color: var(--ok-text); }
+  .badge.indirect { background: var(--warn-bg); color: var(--warn-text); }
+  .badge.not_found { background: #eef0f3; color: var(--muted); }
+  .badge.fail { background: var(--err-bg); color: var(--err-text); }
+  .rw { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid var(--border);
+        border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 13.5px; }
+  .rw.bad { border-color: var(--err-border); }
+  .rw .lbl { font-size: 11.5px; color: var(--muted); }
+  .rw .ask, .rw .note { grid-column: 1 / -1; font-size: 13px; }
+  .rw .ask { color: var(--warn-text); }
+  .rw .note { color: var(--err-text); }
+  @media (max-width: 600px) { .rw { grid-template-columns: 1fr; } }
+  .week { border-left: 3px solid var(--accent); padding: 2px 0 2px 12px; margin-bottom: 14px; }
+  .week h4 { margin: 0 0 6px; font-size: 14px; }
+  .item { margin-bottom: 8px; font-size: 13.5px; }
+  .item .t { font-weight: 600; }
+  .item .r { color: var(--muted); font-size: 13px; }
+  .item a { color: var(--accent); }
+  .q { margin-bottom: 12px; }
+  .q .qt { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .q textarea { min-height: 56px; }
 </style>
 </head>
 <body>
@@ -195,6 +236,14 @@
         </span>
       </div>
       <div id="analyzeMsg" class="msg hidden"></div>
+
+      <div class="fullbar">
+        <button type="button" id="fullBtn" disabled>完整分析</button>
+        <label for="weeklyHours" style="margin:0">每週可投入</label>
+        <input type="number" id="weeklyHours" min="1" max="60" value="8">
+        <span>小時</span>
+        <span class="hint">完整分析需要職缺描述：證據對照、澄清問題、改寫對照、學習計畫。通常 1-2 分鐘。</span>
+      </div>
     </div>
   </section>
 
@@ -230,6 +279,8 @@
   var usageEl     = $("usage");
   var metaEl      = $("resultMeta");
   var resultEl    = $("result");
+  var fullBtn     = $("fullBtn");
+  var weeklyHours = $("weeklyHours");
 
   var prompts = [];
   var busy = false;
@@ -491,8 +542,9 @@
 
   function syncAnalyzeBtn() {
     // 分析途中一律鎖住按鈕，避免重複送出。
-    var ready = !busy && resumeText.value.trim().length >= 20 && !!promptSel.value;
-    analyzeBtn.disabled = !ready;
+    var hasResume = resumeText.value.trim().length >= 20;
+    analyzeBtn.disabled = !(!busy && hasResume && !!promptSel.value);
+    fullBtn.disabled = !(!busy && hasResume && jobText.value.trim().length > 0);
   }
 
   function renderUsage(data) {
@@ -558,6 +610,183 @@
     });
   }
 
+  // ---------- /analyze/full（Day 13） ----------
+  // 每一塊都分成「模型說的」跟「程式驗證的」。驗證沒過的要一眼看得到，
+  // 不能讓使用者自己去每張卡片裡找。
+
+  var VERDICT = { direct: "明確證據", indirect: "間接證據", not_found: "履歷沒寫到" };
+  var resourceMap = {};
+  var lastAnswers = [];
+
+  function loadResources() {
+    request("/resources").then(function (list) {
+      (list || []).forEach(function (r) { resourceMap[r.id] = r; });
+    }).catch(function () { /* 沒有資源就不顯示連結，不擋分析 */ });
+  }
+
+  function evidenceProblem(m) {
+    if (m.verdict === "not_found") return null;
+    if (m.quote_verified) return null;
+    return m.verification_note || "引用無法驗證";
+  }
+
+  function rewriteProblem(r) {
+    if (r.source_verified && !(r.invented_numbers || []).length) return null;
+    return r.verification_note || "未通過驗證";
+  }
+
+  function collectProblems(rep) {
+    var out = [];
+    ((rep.matching && rep.matching.matches) || []).forEach(function (m) {
+      var p = evidenceProblem(m);
+      if (p) out.push("［證據］" + m.requirement + "：" + p);
+    });
+    ((rep.rewrite && rep.rewrite.items) || []).forEach(function (r) {
+      var p = rewriteProblem(r);
+      if (p) out.push("［改寫］" + r.original.slice(0, 24) + "…：" + p);
+    });
+    ((rep.plan && rep.plan.violations) || []).forEach(function (v) {
+      out.push("［計畫］" + v.detail);
+    });
+    return out;
+  }
+
+  function renderQuestions(rep) {
+    var qs = rep.questions || [];
+    if (!qs.length) return "";
+    var html = "<div class=\"block\"><h3>先回答幾個問題 <span class=\"hint\">"
+             + "履歷沒寫到不等於不會。回答會附在履歷後面重新對照，但不會改動履歷原文。</span></h3>";
+    qs.forEach(function (q, i) {
+      html += "<div class=\"q\"><div class=\"qt\">" + escapeHtml(q.question) + "</div>"
+            + "<div class=\"hint\">對應要求：" + escapeHtml(q.requirement) + "</div>"
+            + "<textarea data-i=\"" + i + "\" placeholder=\"沒有的話可以直接寫沒有，留空就跳過\"></textarea></div>";
+    });
+    html += "<button type=\"button\" class=\"secondary\" id=\"answerBtn\">帶著回答重新分析</button></div>";
+    return html;
+  }
+
+  function renderEvidence(rep) {
+    var ms = (rep.matching && rep.matching.matches) || [];
+    if (!ms.length) return "";
+    var html = "<div class=\"block\"><h3>證據對照</h3>";
+    ms.forEach(function (m) {
+      var prob = evidenceProblem(m);
+      html += "<div class=\"ev" + (prob ? " bad" : "") + "\">"
+            + "<div class=\"req\"><span class=\"badge " + m.verdict + "\">" + VERDICT[m.verdict] + "</span>"
+            + (prob ? "<span class=\"badge fail\">驗證沒過</span>" : "")
+            + escapeHtml(m.requirement) + "</div>";
+      if (m.quote) {
+        var fromUser = m.quote_source === "user_answer";
+        html += "<blockquote class=\"" + (fromUser ? "user" : "") + "\">"
+              + "<span class=\"src\">" + (fromUser ? "你的補充回答" : (m.quote_source ? "履歷原文" : "模型宣稱的引用")) + "</span>"
+              + escapeHtml(m.quote) + "</blockquote>";
+      }
+      if (prob) html += "<div class=\"why\" style=\"color:var(--err-text)\">" + escapeHtml(prob) + "</div>";
+      if (m.reasoning) html += "<div class=\"why\">" + escapeHtml(m.reasoning) + "</div>";
+      html += "</div>";
+    });
+    return html + "</div>";
+  }
+
+  function renderRewrite(rep) {
+    var items = (rep.rewrite && rep.rewrite.items) || [];
+    if (!items.length) return "";
+    var html = "<div class=\"block\"><h3>改寫對照 <span class=\"hint\">"
+             + "程式只檢查原句存在、沒有多出數字。「參與」變「主導」這種加料抓不到，請自己看過。</span></h3>";
+    items.forEach(function (r) {
+      var prob = rewriteProblem(r);
+      html += "<div class=\"rw" + (prob ? " bad" : "") + "\">"
+            + "<div><div class=\"lbl\">原句</div>" + escapeHtml(r.original) + "</div>"
+            + "<div><div class=\"lbl\">改寫</div>" + escapeHtml(r.rewritten) + "</div>"
+            + (r.ask_user ? "<div class=\"ask\">" + escapeHtml(r.ask_user) + "</div>" : "")
+            + (prob ? "<div class=\"note\">不要直接用：" + escapeHtml(prob) + "</div>" : "")
+            + "</div>";
+    });
+    return html + "</div>";
+  }
+
+  function renderPlan(rep) {
+    if (!rep.plan) return "";
+    var plan = rep.plan.plan;
+    var html = "<div class=\"block\"><h3>學習計畫 <span class=\"hint\">每週上限 "
+             + escapeHtml(plan.weekly_hours_budget) + " 小時，共 " + escapeHtml(plan.total_hours) + " 小時</span></h3>";
+    if (!plan.items.length) {
+      return html + "<p class=\"placeholder\">沒有需要補的項目。</p></div>";
+    }
+    var weeks = {};
+    plan.items.forEach(function (it) { (weeks[it.week] = weeks[it.week] || []).push(it); });
+    Object.keys(weeks).sort(function (a, b) { return a - b; }).forEach(function (w) {
+      var hrs = weeks[w].reduce(function (s, it) { return s + it.hours; }, 0);
+      html += "<div class=\"week\"><h4>第 " + w + " 週（" + hrs + " 小時）</h4>";
+      weeks[w].forEach(function (it) {
+        var links = (it.resource_ids || []).map(function (id) {
+          var r = resourceMap[id];
+          return r ? "<a href=\"" + escapeHtml(r.url) + "\" target=\"_blank\" rel=\"noopener\">"
+                     + escapeHtml(r.title) + "</a>" : "";
+        }).filter(Boolean);
+        html += "<div class=\"item\"><span class=\"t\">" + escapeHtml(it.topic) + "</span>・" + it.hours + " 小時"
+              + (it.prerequisites.length ? "<div class=\"r\">先修：" + escapeHtml(it.prerequisites.join("、")) + "</div>" : "")
+              + (it.rationale ? "<div class=\"r\">" + escapeHtml(it.rationale) + "</div>" : "")
+              + "<div class=\"r\">資源：" + (links.length ? links.join("、") : "目前沒有人工核實過的資源") + "</div>"
+              + "</div>";
+      });
+      html += "</div>";
+    });
+    return html + "</div>";
+  }
+
+  function renderFull(rep) {
+    var u = rep.usage || {};
+    renderUsage({ usage: u, elapsed_ms: rep.elapsed_ms, model: rep.model, prompt: "pipeline・" + u.calls + " 次呼叫" });
+
+    var problems = collectProblems(rep);
+    var html = "";
+    if (problems.length) {
+      html += "<div class=\"msg err\"><strong>有 " + problems.length + " 項沒通過程式驗證，不要直接採用</strong><ul>"
+            + problems.map(function (p) { return "<li>" + escapeHtml(p) + "</li>"; }).join("") + "</ul></div>";
+    }
+    html += renderQuestions(rep) + renderEvidence(rep) + renderRewrite(rep) + renderPlan(rep);
+    resultEl.innerHTML = html || "<p class=\"placeholder\">沒有結果。</p>";
+
+    var answerBtn = $("answerBtn");
+    if (answerBtn) {
+      answerBtn.addEventListener("click", function () {
+        var answers = [];
+        resultEl.querySelectorAll(".q textarea").forEach(function (ta) {
+          var q = rep.questions[+ta.getAttribute("data-i")];
+          if (ta.value.trim()) answers.push({ requirement: q.requirement, question: q.question, answer: ta.value.trim() });
+        });
+        runFull(answers);
+      });
+    }
+  }
+
+  function runFull(answers) {
+    if (busy) return;
+    hideMsg(analyzeMsg);
+    lastAnswers = answers || [];
+    setBusy(true);
+    resultEl.innerHTML = "<p class=\"placeholder\">完整分析中，會呼叫模型 4-5 次，請稍候…</p>";
+    usageEl.classList.add("hidden");
+    metaEl.classList.add("hidden");
+
+    request("/analyze/full", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        resume_text: resumeText.value.trim(),
+        job_text: jobText.value.trim(),
+        weekly_hours: Number(weeklyHours.value) || 8,
+        answers: lastAnswers
+      })
+    }).then(renderFull).catch(function (err) {
+      showMsg(analyzeMsg, "err", err.title || "分析失敗", err.body);
+      resultEl.innerHTML = "<p class=\"placeholder\">這次沒有產生結果，錯誤訊息顯示在左邊。</p>";
+    }).then(function () {
+      setBusy(false);
+    });
+  }
+
   // ---------- 綁定 ----------
 
   function updateCounts() {
@@ -573,12 +802,14 @@
   });
   extractBtn.addEventListener("click", extractPdf);
   resumeText.addEventListener("input", function () { updateCounts(); syncAnalyzeBtn(); });
-  jobText.addEventListener("input", updateCounts);
+  jobText.addEventListener("input", function () { updateCounts(); syncAnalyzeBtn(); });
   promptSel.addEventListener("change", updatePromptDesc);
   analyzeBtn.addEventListener("click", runAnalyze);
+  fullBtn.addEventListener("click", function () { runFull([]); });
 
   updateCounts();
   loadPrompts();
+  loadResources();
 })();
 </script>
 </body>
