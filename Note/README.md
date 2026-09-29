@@ -50,7 +50,7 @@
 | Day | 日期 | 標題 | 狀態 |
 | --- | --- | --- | --- |
 | 14 | 09/28 | [什麼時候才需要 Agent？把固定流程接上 Google ADK](./day-14-adk-when-and-why.md) | writing |
-| 15 | 09/29 | [工具不是越多越好：設計查詢資源與驗證計畫的 Tool](./day-15-typed-tools.md) | draft |
+| 15 | 09/29 | [工具不是越多越好：設計查詢資源與驗證計畫的 Tool](./day-15-typed-tools.md) | writing |
 | 16 | 09/30 | [讓對話延續：用 Sessions 保存澄清答案與計畫修訂](./day-16-sessions.md) | draft |
 | 17 | 10/01 | [這份履歷只屬於這次分析：使用者隔離、資料保留與刪除](./day-17-privacy-and-deletion.md) | draft |
 | 18 | 10/02 | [當履歷寫著「忽略規則」：測試 Prompt Injection 與工具邊界](./day-18-prompt-injection.md) | draft |

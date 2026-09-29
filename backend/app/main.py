@@ -149,6 +149,7 @@ async def send_to_agent(session_id: str, req: MessageRequest) -> dict:
             "llm_calls": turn.llm_calls,
         },
         "elapsed_ms": turn.elapsed_ms,
+        "stopped": turn.stopped,
     }
 
 

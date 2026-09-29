@@ -7,12 +7,20 @@ LLM 生成計畫，程式檢查計畫。這兩件事分開是這一層的重點�
 
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.resume import SCHEMA_VERSION, SchemaVersion
 
 
+# 不認得的欄位一律報錯，不要靜默忽略（Day 15）。
+# Day 14 agent 自己取了 weeks / week_number / duration_hours，pydantic 預設把它們丟掉，
+# items 變成空的，錯誤訊息只剩「計畫裡一個項目都沒有」，模型完全猜不到錯在哪。
+_STRICT = ConfigDict(extra="forbid")
+
+
 class PlanItem(BaseModel):
+    model_config = _STRICT
+
     week: int = Field(ge=1, description="第幾週，從 1 開始")
     topic: str
     # 不用 Field(gt=0)：它會變成 JSON Schema 的 exclusiveMinimum，
@@ -29,6 +37,8 @@ class PlanItem(BaseModel):
 
 
 class LearningPlan(BaseModel):
+    model_config = _STRICT
+
     schema_version: SchemaVersion = Field(default=SCHEMA_VERSION, validate_default=True)
     weekly_hours_budget: float = Field(default=10.0, description="使用者每週可投入的時數")
     total_hours: float = Field(default=0.0, description="模型自己宣稱的總時數")

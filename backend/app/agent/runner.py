@@ -11,7 +11,8 @@ agent 沒有機會在傳遞過程中「順手改一下」。
 import time
 from dataclasses import dataclass, field
 
-from google.adk.agents import LlmAgent
+from google.adk.agents import LlmAgent, RunConfig
+from google.adk.agents.invocation_context import LlmCallsLimitExceededError
 from google.adk.runners import Runner
 from google.adk.sessions import BaseSessionService, InMemorySessionService
 from google.genai import types
@@ -20,6 +21,12 @@ from app.agent.agent import build_agent
 from app.agent.tools import STATE_RESUME
 
 APP_NAME = "career-agent-helper"
+
+# 一次 send 最多呼叫模型幾次（Day 15）。
+# ADK 預設是 500，對一個專案花費上限 $10 的作品來說等於沒有上限。
+# 第一版設 8，實測 agent 一條要求驗證一次，8 次全用在 verify_evidence，
+# 還沒回覆使用者就被中止。實測最多 8 次驗證 + 1 次回覆，再留修正計畫的空間。
+MAX_LLM_CALLS = 12
 
 
 @dataclass
@@ -32,6 +39,7 @@ class AgentTurn:
     total_tokens: int = 0
     llm_calls: int = 0
     elapsed_ms: int = 0
+    stopped: str | None = None  # 被執行限制擋下時填原因
 
 
 class AgentSession:
@@ -64,22 +72,30 @@ class AgentSession:
         turn = AgentTurn(text="")
         content = types.Content(role="user", parts=[types.Part(text=message)])
 
-        async for event in self._runner.run_async(
-            user_id=user_id, session_id=session_id, new_message=content
-        ):
-            if event.usage_metadata:
-                u = event.usage_metadata
-                turn.prompt_tokens += u.prompt_token_count or 0
-                turn.thought_tokens += u.thoughts_token_count or 0
-                turn.output_tokens += u.candidates_token_count or 0
-                turn.total_tokens += u.total_token_count or 0
-                turn.llm_calls += 1
+        try:
+            async for event in self._runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=content,
+                run_config=RunConfig(max_llm_calls=MAX_LLM_CALLS),
+            ):
+                if event.usage_metadata:
+                    u = event.usage_metadata
+                    turn.prompt_tokens += u.prompt_token_count or 0
+                    turn.thought_tokens += u.thoughts_token_count or 0
+                    turn.output_tokens += u.candidates_token_count or 0
+                    turn.total_tokens += u.total_token_count or 0
+                    turn.llm_calls += 1
 
-            for call in event.get_function_calls() or []:
-                turn.tool_calls.append(call.name)
+                for call in event.get_function_calls() or []:
+                    turn.tool_calls.append(call.name)
 
-            if event.is_final_response() and event.content and event.content.parts:
-                turn.text = "".join(p.text or "" for p in event.content.parts)
+                if event.is_final_response() and event.content and event.content.parts:
+                    turn.text = "".join(p.text or "" for p in event.content.parts)
+        except LlmCallsLimitExceededError:
+            # 停下來比繼續燒錢好。已經產生的文字不當成答案交出去。
+            turn.stopped = f"這一輪呼叫模型超過 {MAX_LLM_CALLS} 次，已中止"
+            turn.text = ""
 
         turn.elapsed_ms = int((time.perf_counter() - started) * 1000)
         return turn

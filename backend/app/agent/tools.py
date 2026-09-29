@@ -9,9 +9,8 @@
 如果兩邊的驗證邏輯是兩份程式碼，比出來的就不是 agent 的價值。
 """
 
-import json
-
 from google.adk.tools import ToolContext
+from pydantic import ValidationError
 
 from app.schemas.plan import LearningPlan
 from app.services import evidence, planner, resources
@@ -91,7 +90,7 @@ def lookup_resources(topics: list[str]) -> dict:
     }
 
 
-def validate_learning_plan(plan_json: str) -> dict:
+def validate_learning_plan(plan: LearningPlan) -> dict:
     """檢查一份學習計畫有沒有違反硬性限制。
 
     檢查項目：總時數加總是否正確、每週是否超過使用者可投入的時數、
@@ -101,15 +100,30 @@ def validate_learning_plan(plan_json: str) -> dict:
     如果有 violations，請修正計畫並重新檢查，不要把有問題的計畫交出去。
 
     Args:
-        plan_json: 符合 LearningPlan schema 的 JSON 字串。
+        plan: 學習計畫。每一項放在 items 裡，欄位名稱照 schema，不要自己取名。
 
     Returns:
         ok 與 violations 清單。
     """
-    try:
-        plan = LearningPlan.model_validate(json.loads(plan_json))
-    except Exception as e:
-        return {"ok": False, "violations": [{"kind": "invalid_json", "detail": str(e)}]}
+    # 參數原本是 plan_json: str，模型看不到欄位，只能猜（Day 14）。
+    # 改成型別之後，ADK 會把 LearningPlan 的 schema 整份送給模型。
+    #
+    # 但 ADK 轉換失敗時只記一行 warning，照樣把原始 dict 傳進來，
+    # 所以這裡還是要自己驗一次，並把錯在哪個欄位講清楚，模型才改得動。
+    if not isinstance(plan, LearningPlan):
+        try:
+            plan = LearningPlan.model_validate(plan)
+        except ValidationError as e:
+            return {
+                "ok": False,
+                "violations": [
+                    {
+                        "kind": "invalid_schema",
+                        "detail": f"{'.'.join(str(p) for p in err['loc'])}：{err['msg']}",
+                    }
+                    for err in e.errors()
+                ],
+            }
 
     result = planner.validate(plan)
     return {
