@@ -27,3 +27,9 @@ evals/reports/*
 
 # adk web 會在 agent 目錄底下自建本機 session 資料庫，裡面可能有貼過的履歷
 .adk/
+
+# 本機 agent session（Day 16），裡面有使用者貼的履歷
+.sessions/
+
+# 部署時從 data/resources 複製進來的（Day 19），來源在 data/
+backend/app/_bundled/

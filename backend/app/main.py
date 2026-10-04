@@ -1,14 +1,15 @@
 """FastAPI 進入點。只管路由與 HTTP 狀態碼轉換，邏輯都在 services 底下。"""
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, Response, UploadFile
 from fastapi.staticfiles import StaticFiles
 
 from pydantic import BaseModel, Field
 
 from app import prompts
-from app.agent.runner import AgentSession
+from app.agent.runner import AgentSession, new_owner_token, owner_of
 from app.config import get_settings
 from app.schemas.clarify import Answer
 from app.schemas.report import AnalysisReport
@@ -18,7 +19,14 @@ from app.services.analyzer import AnalyzerError, analyze
 from app.services.llm import LlmError
 from app.services.pdf import PdfExtractError, extract_text
 
-app = FastAPI(title="Career Agent Helper", version="0.2.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # 服務起來時先清一次過期的 session，不然沒人來就永遠不會清（Day 17）
+    await _agent.purge_expired()
+    yield
+
+
+app = FastAPI(title="Career Agent Helper", version="0.2.0", lifespan=lifespan)
 
 
 @app.get("/healthz")
@@ -117,25 +125,37 @@ _agent = AgentSession()
 
 
 class StartSessionRequest(BaseModel):
-    user_id: str = Field(min_length=1, max_length=128)
     resume_text: str = Field(min_length=20, max_length=20_000)
 
 
 class MessageRequest(BaseModel):
-    user_id: str = Field(min_length=1, max_length=128)
     message: str = Field(min_length=1, max_length=4_000)
+
+
+# 找不到跟不是你的，回一樣的 404。
+# 回 403 等於告訴對方「這個 session id 存在」。
+_NOT_FOUND = HTTPException(status_code=404, detail="找不到這個 session，可能已過期或被刪除")
 
 
 @app.post("/agent/sessions")
 async def start_agent_session(req: StartSessionRequest) -> dict:
-    s = await _agent.start(req.user_id, req.resume_text)
-    return {"session_id": s.id, "user_id": req.user_id}
+    """token 只在這裡出現一次，之後每個請求都要帶 X-Session-Token。"""
+    token = new_owner_token()
+    s = await _agent.start(owner_of(token), req.resume_text)
+    return {"session_id": s.id, "token": token}
 
 
 @app.post("/agent/sessions/{session_id}/messages")
-async def send_to_agent(session_id: str, req: MessageRequest) -> dict:
+async def send_to_agent(
+    session_id: str,
+    req: MessageRequest,
+    x_session_token: str = Header(min_length=1),
+) -> dict:
+    owner = owner_of(x_session_token)
+    if not await _agent.exists(owner, session_id):
+        raise _NOT_FOUND
     try:
-        turn = await _agent.send(req.user_id, session_id, req.message)
+        turn = await _agent.send(owner, session_id, req.message)
     except LlmError as e:
         raise HTTPException(status_code=e.status_code, detail=str(e)) from e
     return {
@@ -150,13 +170,19 @@ async def send_to_agent(session_id: str, req: MessageRequest) -> dict:
         },
         "elapsed_ms": turn.elapsed_ms,
         "stopped": turn.stopped,
+        # 回覆裡用「」引用、但履歷跟使用者的訊息裡都找不到的句子，給畫面標示用（Day 18）
+        "unverified_quotes": turn.unverified_quotes,
     }
 
 
 @app.delete("/agent/sessions/{session_id}", status_code=204)
-async def delete_agent_session(session_id: str, user_id: str) -> None:
+async def delete_agent_session(
+    session_id: str, x_session_token: str = Header(min_length=1)
+) -> Response:
     """履歷是高敏感個資，刪除要是一個真的端點，不是「之後再說」。"""
-    await _agent.delete(user_id, session_id)
+    if not await _agent.delete(owner_of(x_session_token), session_id):
+        raise _NOT_FOUND
+    return Response(status_code=204)
 
 
 # 靜態前端掛在最後：mount 在 "/" 會吃掉所有沒被上面路由接走的路徑，

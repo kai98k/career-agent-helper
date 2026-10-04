@@ -7,7 +7,7 @@
 import json
 import time
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import Generic, TypeVar
 
 from google import genai
 from google.genai import errors, types
@@ -40,9 +40,12 @@ class Usage:
         )
 
 
+# 不用 Python 3.12 的 class Result[T: BaseModel] 寫法：
+# adk deploy cloud_run 產生的 Dockerfile 寫死 python:3.11-slim，
+# 3.12 的語法在那邊直接 SyntaxError，agent 載入失敗（Day 20 實測）。
 @dataclass
-class Result[TModel: BaseModel]:
-    data: TModel
+class Result(Generic[T]):
+    data: T
     usage: Usage
     elapsed_ms: int
     model: str

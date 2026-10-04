@@ -24,6 +24,14 @@ class Settings:
     max_upload_mb: int = int(os.environ.get("MAX_UPLOAD_MB", "5"))
     max_pdf_pages: int = int(os.environ.get("MAX_PDF_PAGES", "10"))
 
+    # agent 的 session 存哪裡（Day 16）。留空就用記憶體，服務重開就沒了。
+    # 裡面有使用者貼的履歷，檔案所在的資料夾已經加進 .gitignore。
+    session_db_url: str = os.environ.get(
+        "SESSION_DB_URL", "sqlite+aiosqlite:///./.sessions/sessions.db"
+    )
+    # session 最後一次有動作之後，保留幾小時就刪（Day 17）
+    session_ttl_hours: float = float(os.environ.get("SESSION_TTL_HOURS", "24"))
+
     def require_project_id(self) -> str:
         if not self.project_id:
             raise RuntimeError("缺少 GOOGLE_CLOUD_PROJECT，請先複製 .env.example 成 .env")

@@ -3,7 +3,10 @@
 
 # Google Gen AI / ADK / Agent Platform
 google-genai
-google-adk>=2.0
+# [db]：本機用 DatabaseSessionService + SQLite 存 session（Day 16）
+google-adk[db]>=2.0
+# SQLAlchemy 2.1 起 greenlet 要靠 [asyncio] 才會裝，ADK 的 [db] 沒帶，少了它 async engine 建不起來
+sqlalchemy[asyncio]>=2
 google-cloud-aiplatform[agent_engines,adk]>=1.112
 
 # Web

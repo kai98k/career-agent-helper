@@ -14,7 +14,15 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-_DATA = Path(__file__).resolve().parents[3] / "data" / "resources" / "resources.json"
+# 本機：repo 根目錄的 data/。
+# 部署（Day 19）：只有 app/ 會被打包上去，repo 的目錄結構不在了，
+# 所以部署腳本會把清單複製一份到 app/_bundled/，這裡先找那份。
+# 以前兩個都找不到時回空清單，雲端上看起來就是「永遠查無資源」，不會報錯。
+# 清單裡目前一筆 verified 都沒有，查無資源本來就是正常結果，根本分不出來，
+# 所以找不到檔案改成直接報錯。
+_BUNDLED = Path(__file__).resolve().parents[1] / "_bundled" / "resources.json"
+_REPO = Path(__file__).resolve().parents[3] / "data" / "resources" / "resources.json"
+_DATA = _BUNDLED if _BUNDLED.exists() else _REPO
 
 
 class Resource(BaseModel):
@@ -34,7 +42,7 @@ class Resource(BaseModel):
 @lru_cache
 def load_all() -> list[Resource]:
     if not _DATA.exists():
-        return []
+        raise FileNotFoundError(f"找不到資源清單：{_DATA}（部署時有沒有打包進 app/_bundled/？）")
     raw = json.loads(_DATA.read_text(encoding="utf-8"))
     return [Resource.model_validate(r) for r in raw]
 

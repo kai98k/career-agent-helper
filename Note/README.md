@@ -51,15 +51,15 @@
 | --- | --- | --- | --- |
 | 14 | 09/28 | [什麼時候才需要 Agent？把固定流程接上 Google ADK](./day-14-adk-when-and-why.md) | writing |
 | 15 | 09/29 | [工具不是越多越好：設計查詢資源與驗證計畫的 Tool](./day-15-typed-tools.md) | writing |
-| 16 | 09/30 | [讓對話延續：用 Sessions 保存澄清答案與計畫修訂](./day-16-sessions.md) | draft |
-| 17 | 10/01 | [這份履歷只屬於這次分析：使用者隔離、資料保留與刪除](./day-17-privacy-and-deletion.md) | draft |
-| 18 | 10/02 | [當履歷寫著「忽略規則」：測試 Prompt Injection 與工具邊界](./day-18-prompt-injection.md) | draft |
+| 16 | 09/30 | [讓對話延續：用 Sessions 保存澄清答案與計畫修訂](./day-16-sessions.md) | writing |
+| 17 | 10/01 | [這份履歷只屬於這次分析：使用者隔離、資料保留與刪除](./day-17-privacy-and-deletion.md) | writing |
+| 18 | 10/02 | [當履歷寫著「忽略規則」：測試 Prompt Injection 與工具邊界](./day-18-prompt-injection.md) | writing |
 
 ### 第5章：部署到平台，觀察真實行為
 
 | Day | 日期 | 標題 | 狀態 |
 | --- | --- | --- | --- |
-| 19 | 10/03 | [從本機走向雲端：部署 ADK Agent 到 Agent Runtime](./day-19-deploy-agent-runtime.md) | draft |
+| 19 | 10/03 | [從本機走向雲端：部署 ADK Agent 到 Agent Runtime](./day-19-deploy-agent-runtime.md) | writing |
 | 20 | 10/04 | [Agent Runtime、Cloud Run 還是自己包？部署路徑的取捨](./day-20-deployment-tradeoffs.md) | draft |
 | 21 | 10/05 | [串起網頁與雲端 Agent：身分驗證、存取控制與結果呈現](./day-21-frontend-cloud-auth.md) | draft |
 | 22 | 10/06 | [一次分析到底做了什麼？用 Trace 追蹤模型與工具呼叫](./day-22-cloud-trace.md) | draft |
