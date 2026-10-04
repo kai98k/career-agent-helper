@@ -200,9 +200,9 @@ Service [career-agent-helper] revision [career-agent-helper-00002-pbx] has been 
 | Python 版本 | 跟部署的電腦一樣（3.12） | 寫死 3.11 |
 | 打包方式 | pickle agent + extra_packages | Docker image（172 MB） |
 | session | 平台管 | 預設記憶體，要自己接 |
-| 冷啟動：建 session | 36.5 秒 | COLD_CREATE |
-| 冷啟動：第一個回覆 | 29.9 秒 | COLD_RUN |
-| 熱的：建 session + 回覆 | 0.4 + 2.1 秒 | WARM |
+| 冷啟動：建 session | 36.5 秒 | 17.7 秒 |
+| 冷啟動：第一個回覆 | 29.9 秒 | 2.9 秒 |
+| 熱的：建 session + 回覆 | 0.4 + 2.1 秒 | 0.3 + 1.3 秒 |
 | 誰能呼叫 | 有 Agent Platform 權限的人 | 有 `run.invoker` 的人 |
 | 跑 agent 的身分 | 專案共用的 service agent（56 個權限） | 自己指定 |
 | 呼叫方式 | SDK 的 `stream_query` | 一般的 HTTP API |
@@ -214,7 +214,13 @@ Service [career-agent-helper] revision [career-agent-helper-00002-pbx] has been 
 Agent Runtime 是放了一整晚之後量的，光建 session 就 36.5 秒，第一個回覆再 29.9 秒，使用者等了一分鐘
 `min_instances=0` 確實有縮到 0，代價就是這一分鐘
 
-COLD_NOTE
+Cloud Run 閒置 21 分鐘之後量，建 session 17.7 秒、回覆 2.9 秒，加起來大約 20 秒，是 Agent Runtime 的三分之一
+
+不過這兩個數字不是完全公平的比較
+- Agent Runtime 放了一整晚，Cloud Run 只放了 21 分鐘，閒置多久會不會影響冷啟動，我沒有控制
+- Cloud Run 這邊的 session 也是存在 Agent Runtime 的 Sessions，所以那 17.7 秒裡，有一部分可能是 Sessions 那邊也在冷啟動，不全是容器啟動
+
+熱的時候兩邊差不多，都是 2 秒上下，差的只有第一個人
 
 **身分：自己指定不等於權限比較小**
 
@@ -268,6 +274,12 @@ gcloud artifacts docker images delete asia-east1-docker.pkg.dev/<project>/cloud-
 
 為了部署開的權限也收回來：`roles/run.builder`、專屬的 `career-agent-run` 帳號跟它的 `roles/aiplatform.user`
 API 留著，開著不收錢
+
+刪完再列一次，發現 `gcloud run deploy --source` 自己還建了兩樣東西
+- `run-sources-<project>-asia-east1` 這個 bucket，裡面是四次部署上傳的原始碼壓縮檔
+- `cloud-run-source-deploy` 這個 Artifact Registry repository，image 刪掉之後是空的
+
+部署指令不會告訴你它建了什麼，收拾的時候要自己去列
 
 測試從 70 個變成 71 個，多的是那個 3.11 語法掃描
 
