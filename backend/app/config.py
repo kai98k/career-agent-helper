@@ -32,6 +32,12 @@ class Settings:
     # session 最後一次有動作之後，保留幾小時就刪（Day 17）
     session_ttl_hours: float = float(os.environ.get("SESSION_TTL_HOURS", "24"))
 
+    # agent 在哪裡跑（Day 21）：local 是本機的 ADK Runner + SQLite，
+    # runtime 是 Day 19 部署到 Agent Runtime 的那一個。端點跟前端都不用改。
+    agent_backend: str = os.environ.get("AGENT_BACKEND", "local")
+    agent_engine_name: str = os.environ.get("AGENT_ENGINE_NAME", "")
+    agent_runtime_location: str = os.environ.get("AGENT_RUNTIME_LOCATION", "asia-east1")
+
     def require_project_id(self) -> str:
         if not self.project_id:
             raise RuntimeError("缺少 GOOGLE_CLOUD_PROJECT，請先複製 .env.example 成 .env")

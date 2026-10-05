@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app import prompts
+from app.agent.remote import AgentError, AgentTimeout, RemoteAgentSession
 from app.agent.runner import AgentSession, new_owner_token, owner_of
 from app.config import get_settings
 from app.schemas.clarify import Answer
@@ -121,7 +122,8 @@ def analyze_full(req: FullAnalyzeRequest) -> AnalysisReport:
 
 
 # 路徑 B：agent。跟路徑 A 並存，Day 29 要拿兩者比較，不能拆掉任何一條。
-_agent = AgentSession()
+# Day 21：AGENT_BACKEND=runtime 時改打雲端的 Agent Runtime，端點跟前端都不用改。
+_agent = RemoteAgentSession() if get_settings().agent_backend == "runtime" else AgentSession()
 
 
 class StartSessionRequest(BaseModel):
@@ -158,6 +160,12 @@ async def send_to_agent(
         turn = await _agent.send(owner, session_id, req.message)
     except LlmError as e:
         raise HTTPException(status_code=e.status_code, detail=str(e)) from e
+    except AgentTimeout as e:
+        # 504：後面的服務太慢。前端看到這個要說「可能在冷啟動，等一下再試」，不是「壞了」
+        raise HTTPException(status_code=504, detail=f"agent 回應逾時（{e}）。雲端閒置後第一次呼叫可能要一分鐘以上，請稍後再試。") from e
+    except AgentError as e:
+        # 502：後面的服務出錯。訊息原樣給前端，不吞掉（Day 19：吞掉就變成「成功但沒有回覆」）
+        raise HTTPException(status_code=502, detail=f"agent 執行失敗：{e}") from e
     return {
         "text": turn.text,
         "tool_calls": turn.tool_calls,

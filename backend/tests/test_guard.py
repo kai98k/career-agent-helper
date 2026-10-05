@@ -88,10 +88,11 @@ class FakeLlm(BaseLlm):
         self.calls += 1
         if isinstance(reply, str):
             yield LlmResponse(content=types.Content(role="model", parts=[types.Part(text=reply)]))
-        else:  # 呼叫工具
-            name, args = reply
-            part = types.Part(function_call=types.FunctionCall(name=name, args=args))
-            yield LlmResponse(content=types.Content(role="model", parts=[part]))
+        else:  # 呼叫工具；三個元素的話，第一個是同一則回應裡先講的話（Day 21）
+            *before, name, args = reply
+            parts = [types.Part(text=t) for t in before]
+            parts.append(types.Part(function_call=types.FunctionCall(name=name, args=args)))
+            yield LlmResponse(content=types.Content(role="model", parts=parts))
 
 
 def _send(replies: list, *, use_guard: bool = True, times: int = 1):
@@ -148,3 +149,27 @@ def test_llm_call_limit_resets_for_each_message():
     llm, turns, _ = _send([("verify_evidence", {"quotes": ["Java"]})], times=2)
     assert llm.calls == 2 * MAX_LLM_CALLS
     assert all(t.stopped == LIMIT_NOTICE for t in turns)
+
+
+PLAN_TEXT = "第 1 週：SQL 索引（6 小時）\n第 2 週：Docker Compose（6 小時）"
+
+
+def test_text_written_next_to_a_tool_call_reaches_the_user():
+    """Day 21：計畫寫在呼叫 validate_learning_plan 的那則回應裡，最後一則只說「已通過」。"""
+    _, [turn], _ = _send([
+        (PLAN_TEXT, "lookup_resources", {"topics": ["SQL"]}),
+        "計畫已經通過檢查。",
+    ])
+    assert PLAN_TEXT in turn.text
+    assert turn.text.endswith("計畫已經通過檢查。")
+
+
+def test_leak_next_to_a_tool_call_is_stripped_but_the_call_still_runs():
+    """Day 19 以前，跟工具呼叫寫在一起的文字 guard 完全不看。"""
+    _, [turn], _ = _send([
+        (ADK_PREAMBLE, "lookup_resources", {"topics": ["SQL"]}),
+        NORMAL_REPLY,
+    ])
+    assert ADK_PREAMBLE not in turn.text
+    assert turn.tool_calls == ["lookup_resources"]
+    assert turn.text == NORMAL_REPLY

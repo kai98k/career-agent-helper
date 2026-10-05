@@ -24,6 +24,7 @@ from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import BaseSessionService, InMemorySessionService
 from google.genai import types
+from google.genai.errors import APIError
 
 from app.agent.agent import build_agent
 from app.agent.callbacks import MAX_LLM_CALLS  # noqa: F401（舊的 import 路徑）
@@ -76,6 +77,14 @@ def owner_of(token: str) -> str:
     return "anon-" + hashlib.sha256(token.encode()).hexdigest()[:32]
 
 
+class AgentError(Exception):
+    """agent 執行失敗（模型 404、配額、工具出錯…）。本機跟雲端（remote.py）共用。"""
+
+
+class AgentTimeout(Exception):
+    """等太久還沒回完。"""
+
+
 @dataclass
 class AgentTurn:
     text: str
@@ -126,30 +135,44 @@ class AgentSession:
         turn = AgentTurn(text="")
         content = types.Content(role="user", parts=[types.Part(text=message)])
 
-        async for event in self._runner.run_async(
-            user_id=user_id, session_id=session_id, new_message=content
-        ):
-            if event.usage_metadata:
-                u = event.usage_metadata
-                turn.prompt_tokens += u.prompt_token_count or 0
-                turn.thought_tokens += u.thoughts_token_count or 0
-                turn.output_tokens += u.candidates_token_count or 0
-                turn.total_tokens += u.total_token_count or 0
-                turn.llm_calls += 1
-
-            for call in event.get_function_calls() or []:
-                turn.tool_calls.append(call.name)
-
-            if event.is_final_response() and event.content and event.content.parts:
-                turn.text = "".join(p.text or "" for p in event.content.parts if not p.thought)
-                meta = event.custom_metadata or {}
-                turn.unverified_quotes = meta.get("unverified_quotes", [])
-                if meta.get("stopped"):
-                    # 被擋下時，文字是 callback 換上的說明。說明放 stopped，不當成答案。
-                    turn.stopped, turn.text = turn.text, ""
+        try:
+            async for event in self._runner.run_async(
+                user_id=user_id, session_id=session_id, new_message=content
+            ):
+                self._absorb(turn, event)
+        except APIError as e:
+            # 模型呼叫失敗（404、429…）原本會變成 500，跟雲端一樣轉成 AgentError
+            raise AgentError(str(e)) from e
 
         turn.elapsed_ms = int((time.perf_counter() - started) * 1000)
         return turn
+
+    @staticmethod
+    def _absorb(turn: AgentTurn, event) -> None:
+        if event.usage_metadata:
+            u = event.usage_metadata
+            turn.prompt_tokens += u.prompt_token_count or 0
+            turn.thought_tokens += u.thoughts_token_count or 0
+            turn.output_tokens += u.candidates_token_count or 0
+            turn.total_tokens += u.total_token_count or 0
+            turn.llm_calls += 1
+
+        for call in event.get_function_calls() or []:
+            turn.tool_calls.append(call.name)
+
+        if not (event.content and event.content.parts) or event.author == "user":
+            return
+        text = "".join(p.text or "" for p in event.content.parts if not p.thought)
+        if not text:
+            return
+        # 呼叫工具的那則回應也可能帶文字（例如整份計畫），一輪的文字全部接起來（Day 21）
+        turn.text = f"{turn.text}\n\n{text}" if turn.text else text
+        if event.is_final_response():
+            meta = event.custom_metadata or {}
+            turn.unverified_quotes = meta.get("unverified_quotes", [])
+            if meta.get("stopped"):
+                # 被擋下時，文字是 callback 換上的說明。說明放 stopped，前面的文字也不給。
+                turn.stopped, turn.text = text, ""
 
     async def exists(self, user_id: str, session_id: str) -> bool:
         s = await self._sessions.get_session(

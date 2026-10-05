@@ -61,7 +61,7 @@
 | --- | --- | --- | --- |
 | 19 | 10/03 | [從本機走向雲端：部署 ADK Agent 到 Agent Runtime](./day-19-deploy-agent-runtime.md) | writing |
 | 20 | 10/04 | [Agent Runtime、Cloud Run 還是自己包？部署路徑的取捨](./day-20-deployment-tradeoffs.md) | draft |
-| 21 | 10/05 | [串起網頁與雲端 Agent：身分驗證、存取控制與結果呈現](./day-21-frontend-cloud-auth.md) | draft |
+| 21 | 10/05 | [串起網頁與雲端 Agent：身分驗證、存取控制與結果呈現](./day-21-frontend-cloud-auth.md) | writing |
 | 22 | 10/06 | [一次分析到底做了什麼？用 Trace 追蹤模型與工具呼叫](./day-22-cloud-trace.md) | draft |
 | 23 | 10/07 | [不記錄整份履歷，也要排查問題：Logging 與 Monitoring 實作](./day-23-logging-monitoring.md) | draft |
 | 24 | 10/08 | [模型逾時、429、工具失敗怎麼辦？讓流程能重試，也知道何時停止](./day-24-retry-and-timeout.md) | draft |

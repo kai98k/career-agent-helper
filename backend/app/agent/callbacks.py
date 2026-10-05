@@ -66,11 +66,17 @@ def guard_reply(callback_context: CallbackContext, llm_response: LlmResponse) ->
     content = llm_response.content
     if llm_response.partial or not content or not content.parts:
         return None
-    if any(p.function_call for p in content.parts):
-        return None
-
     text = "".join(p.text or "" for p in content.parts if not p.thought)
     if not text:
+        return None
+
+    if any(p.function_call for p in content.parts):
+        # 模型會在呼叫工具的同一則回應裡先講幾句話（Day 16 看過），
+        # 這段文字一樣會顯示給使用者。Day 19 以前這裡直接跳過，洩漏可以從這裡溜出去（Day 21）。
+        # 有洩漏就只拿掉文字，工具呼叫留著，不然 agent 的流程會斷掉。
+        if guard.leaked(text):
+            content.parts = [p for p in content.parts if p.function_call or p.thought]
+            return llm_response
         return None
 
     meta = dict(llm_response.custom_metadata or {})

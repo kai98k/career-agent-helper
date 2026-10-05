@@ -145,6 +145,16 @@
   .result hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
   .placeholder { color: var(--muted); font-size: 13.5px; }
 
+  /* Day 21：對話模式 */
+  .chatbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  #chatInput { min-height: 90px; }
+  .turn { margin-top: 16px; }
+  .turn .who { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .turn.user .bubble { background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+                       padding: 8px 10px; white-space: pre-wrap; font-size: 13.5px; max-height: 8em; overflow: auto; }
+  .turn .stats { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  mark.unverified { background: var(--warn-bg); border-bottom: 2px solid var(--warn-border); color: inherit; }
+
   /* ---------- 完整分析結果（Day 13） ---------- */
   .fullbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px;
              padding-top: 14px; border-top: 1px dashed var(--border); }
@@ -243,6 +253,28 @@
         <input type="number" id="weeklyHours" min="1" max="60" value="8">
         <span>小時</span>
         <span class="hint">完整分析需要職缺描述：證據對照、澄清問題、改寫對照、學習計畫。通常 1-2 分鐘。</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section">4. 對話模式<span class="hint">（agent：可以追問、補充、請它改計畫）</span></h2>
+      <p class="hint" style="margin:0 0 8px">
+        履歷會存在這次對話裡 24 小時，只有這個分頁拿得到。關掉分頁就回不來了，用完可以直接刪除。
+      </p>
+      <div class="chatbar">
+        <button type="button" id="chatStartBtn" disabled>用上面的履歷開始對話</button>
+        <button type="button" class="secondary" id="chatDeleteBtn" disabled>刪除這次的資料</button>
+      </div>
+      <div id="chatMsg" class="msg hidden"></div>
+      <div id="chatBox" class="hidden" style="margin-top:10px">
+        <textarea id="chatInput" placeholder="想問什麼？例如：幫我看看履歷跟這個職缺的落差。"></textarea>
+        <div class="chatbar">
+          <button type="button" id="chatSendBtn">送出</button>
+          <span id="chatWait" class="loading-note hidden">
+            <span class="spinner"></span>
+            等待回覆中（已等待 <span id="chatElapsed">0</span> 秒）。雲端閒置後的第一句可能要一分鐘。
+          </span>
+        </div>
       </div>
     </div>
   </section>
@@ -358,6 +390,14 @@
         return payload;
       });
     }, function (netErr) {
+      // Day 21：前端自己設的逾時（AbortController）不是「連線失敗」，要分開講
+      if (netErr && netErr.name === "AbortError") {
+        var tErr = new Error("等太久了");
+        tErr.title = "等太久了";
+        tErr.body = "超過時間還沒有回應，請求已取消。雲端的 agent 閒置一陣子之後，第一次呼叫可能要一分鐘以上，可以再送一次。";
+        tErr.timeout = true;
+        throw tErr;
+      }
       var err = new Error("連線失敗");
       err.title = "連線失敗";
       err.body = "無法連到後端（" + netErr.message + "）。請確認伺服器還在執行。";
@@ -787,6 +827,164 @@
     });
   }
 
+  // ---------- 對話模式（Day 21） ----------
+  // token 只放在這個變數裡，不放 localStorage：
+  // 履歷是高敏感個資，關掉分頁就拿不回來，比「誰用這台電腦都看得到」好。
+  var CHAT_TIMEOUT_MS = 200000;  // 比後端的 180 秒多一點，讓後端先回 504 說清楚
+  var chat = { id: null, token: null, busy: false, timer: null };
+  var chatStartBtn = $("chatStartBtn"), chatDeleteBtn = $("chatDeleteBtn");
+  var chatMsg = $("chatMsg"), chatBox = $("chatBox"), chatInput = $("chatInput");
+  var chatSendBtn = $("chatSendBtn"), chatWait = $("chatWait"), chatElapsed = $("chatElapsed");
+
+  function syncChat() {
+    var hasResume = resumeText.value.trim().length >= 20;
+    chatStartBtn.disabled = chat.busy || !hasResume;
+    chatStartBtn.textContent = chat.id ? "用上面的履歷重新開始" : "用上面的履歷開始對話";
+    chatDeleteBtn.disabled = chat.busy || !chat.id;
+    chatSendBtn.disabled = chat.busy || !chat.id;
+    chatBox.classList.toggle("hidden", !chat.id);
+  }
+
+  function setChatBusy(on) {
+    chat.busy = on;
+    chatWait.classList.toggle("hidden", !on);
+    if (chat.timer) { clearInterval(chat.timer); chat.timer = null; }
+    if (on) {
+      var t0 = Date.now();
+      chatElapsed.textContent = "0";
+      chat.timer = setInterval(function () {
+        chatElapsed.textContent = String(Math.floor((Date.now() - t0) / 1000));
+      }, 1000);
+    }
+    syncChat();
+  }
+
+  function chatRequest(url, options) {
+    var ctrl = new AbortController();
+    var t = setTimeout(function () { ctrl.abort(); }, CHAT_TIMEOUT_MS);
+    options = options || {};
+    options.signal = ctrl.signal;
+    options.headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+    if (chat.token) options.headers["X-Session-Token"] = chat.token;
+    return request(url, options).then(function (d) { clearTimeout(t); return d; },
+                                      function (e) { clearTimeout(t); throw e; });
+  }
+
+  // 回覆裡用「」引用、但履歷跟使用者說過的話裡都找不到的句子，標黃（Day 18 的 guard）
+  function markUnverified(html, quotes) {
+    (quotes || []).forEach(function (q) {
+      var esc = escapeHtml(q);
+      if (!esc) return;
+      html = html.split(esc).join("<mark class=\"unverified\" title=\"履歷裡找不到這句\">" + esc + "</mark>");
+    });
+    return html;
+  }
+
+  function appendTurn(who, html) {
+    if (!resultEl.querySelector(".turn")) resultEl.innerHTML = "";
+    var div = document.createElement("div");
+    div.className = "turn " + who;
+    div.innerHTML = "<div class=\"who\">" + (who === "user" ? "你" : "agent") + "</div>" + html;
+    resultEl.appendChild(div);
+    div.scrollIntoView({ behavior: "smooth", block: "end" });
+  }
+
+  function renderReply(d) {
+    var html = "";
+    if (d.stopped) {
+      html += "<div class=\"msg warn\"><strong>這一輪沒有回覆</strong>" + escapeHtml(d.stopped) + "</div>";
+    } else {
+      html += "<div class=\"result\">" + markUnverified(renderMarkdown(d.text || ""), d.unverified_quotes) + "</div>";
+    }
+    var qs = d.unverified_quotes || [];
+    if (qs.length) {
+      html += "<div class=\"msg warn\"><strong>有 " + qs.length + " 句引用在履歷裡找不到，不要直接採用</strong><ul>"
+            + qs.map(function (q) { return "<li>" + escapeHtml(q) + "</li>"; }).join("") + "</ul>"
+            + "有些可能是 agent 給的改寫建議，不是在說履歷寫了這句，請自己對照原文。</div>";
+    }
+    var u = d.usage || {};
+    html += "<div class=\"stats\">" + (d.elapsed_ms / 1000).toFixed(1) + " 秒・" + fmtNum(u.total_tokens || 0)
+          + " tokens・呼叫模型 " + (u.llm_calls || 0) + " 次・工具 " + ((d.tool_calls || []).join("、") || "無") + "</div>";
+    return html;
+  }
+
+  function resetChat(note) {
+    chat.id = null; chat.token = null;
+    if (note) showMsg(chatMsg, "warn", note.title, note.body);
+    syncChat();
+  }
+
+  function startChat() {
+    if (chat.busy) return;
+    var resume = resumeText.value.trim();
+    hideMsg(chatMsg);
+    setChatBusy(true);
+    var old = chat.id ? { id: chat.id, token: chat.token } : null;
+    chat.token = null;
+    // 重新開始時，舊的那份先刪掉，不要留在伺服器上等 24 小時
+    var cleanup = old ? request("/agent/sessions/" + encodeURIComponent(old.id), {
+      method: "DELETE", headers: { "X-Session-Token": old.token }
+    }).catch(function () {}) : Promise.resolve();
+
+    cleanup.then(function () {
+      return chatRequest("/agent/sessions", { method: "POST", body: JSON.stringify({ resume_text: resume }) });
+    }).then(function (d) {
+      chat.id = d.session_id; chat.token = d.token;
+      resultEl.innerHTML = "<p class=\"placeholder\">對話開始了。左邊輸入問題送出（Ctrl+Enter 也可以）。</p>";
+      usageEl.classList.add("hidden"); metaEl.classList.add("hidden");
+      var job = jobText.value.trim();
+      chatInput.value = job ? "我想應徵下面這個職缺，幫我看看履歷跟它的落差。\n\n" + job : "";
+      showMsg(chatMsg, "ok", "對話已建立", "履歷只會放在這次對話裡，24 小時後自動刪除。");
+    }).catch(function (err) {
+      resetChat();
+      showMsg(chatMsg, "err", err.title || "開始對話失敗", err.body);
+    }).then(function () { setChatBusy(false); chatInput.focus(); });
+  }
+
+  function sendChat() {
+    if (chat.busy || !chat.id) return;
+    var text = chatInput.value.trim();
+    if (!text) return;
+    hideMsg(chatMsg);
+    appendTurn("user", "<div class=\"bubble\">" + escapeHtml(text) + "</div>");
+    chatInput.value = "";
+    setChatBusy(true);
+    chatRequest("/agent/sessions/" + encodeURIComponent(chat.id) + "/messages", {
+      method: "POST", body: JSON.stringify({ message: text })
+    }).then(function (d) {
+      appendTurn("agent", renderReply(d));
+    }).catch(function (err) {
+      if (/404/.test(err.title || "")) {
+        resetChat({ title: "這次對話已經不在了", body: "可能超過 24 小時被自動刪除，或已經刪除。請重新開始對話。" });
+        return;
+      }
+      chatInput.value = text;  // 失敗就把問題放回去，方便再送一次
+      var slow = err.timeout || /504/.test(err.title || "");
+      showMsg(chatMsg, slow ? "warn" : "err", err.title || "送出失敗", err.body);
+    }).then(function () { setChatBusy(false); });
+  }
+
+  function deleteChat() {
+    if (chat.busy || !chat.id) return;
+    if (!confirm("刪除之後，這次對話跟裡面的履歷都會從伺服器移除，無法復原。確定刪除？")) return;
+    setChatBusy(true);
+    chatRequest("/agent/sessions/" + encodeURIComponent(chat.id), { method: "DELETE" }).then(function () {
+      resetChat();
+      showMsg(chatMsg, "ok", "已刪除", "這次對話跟裡面的履歷已經從伺服器移除。");
+      resultEl.innerHTML = "<p class=\"placeholder\">結果會顯示在這裡。</p>";
+    }).catch(function (err) {
+      showMsg(chatMsg, "err", err.title || "刪除失敗", err.body);
+    }).then(function () { setChatBusy(false); });
+  }
+
+  chatStartBtn.addEventListener("click", startChat);
+  chatSendBtn.addEventListener("click", sendChat);
+  chatDeleteBtn.addEventListener("click", deleteChat);
+  chatInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) sendChat();
+  });
+  resumeText.addEventListener("input", syncChat);
+
   // ---------- 綁定 ----------
 
   function updateCounts() {
@@ -808,6 +1006,7 @@
   fullBtn.addEventListener("click", function () { runFull([]); });
 
   updateCounts();
+  syncChat();
   loadPrompts();
   loadResources();
 })();
